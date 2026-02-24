@@ -1,17 +1,18 @@
 import { useRef, useEffect, useState } from "react";
-import ReactPlayer from "react-player";
+import ReactPlayer from "react-player/lazy";
 import socket from "./socket";
 
 function VideoPlayer({ roomId, videoUrl }) {
   const playerRef = useRef(null);
   const isRemote = useRef(false);
   const [playing, setPlaying] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState(null);
   const [syncStatus, setSyncStatus] = useState("");
 
   // Debug logging
   console.log("VideoPlayer render - videoUrl:", videoUrl);
   console.log("VideoPlayer render - roomId:", roomId);
-  console.log("ReactPlayer can play this URL:", ReactPlayer.canPlay(videoUrl));
 
   useEffect(() => {
     if (!roomId) return;
@@ -113,7 +114,8 @@ function VideoPlayer({ roomId, videoUrl }) {
         }}
       >
         <div>DEBUG: URL = {videoUrl || "EMPTY"}</div>
-        <div>DEBUG: Can Play = {String(ReactPlayer.canPlay(videoUrl))}</div>
+        <div>DEBUG: Ready = {String(ready)}</div>
+        <div>DEBUG: Error = {error || "none"}</div>
         <div>DEBUG: Room = {roomId || "NONE"}</div>
       </div>
       <div className="player-wrapper">
@@ -127,9 +129,16 @@ function VideoPlayer({ roomId, videoUrl }) {
           onPlay={handlePlay}
           onPause={handlePause}
           onSeek={handleSeek}
-          onReady={() => console.log("ReactPlayer: READY")}
-          onError={(e) => console.error("ReactPlayer ERROR:", e)}
+          onReady={() => {
+            console.log("ReactPlayer: READY");
+            setReady(true);
+          }}
+          onError={(e) => {
+            console.error("ReactPlayer ERROR:", e);
+            setError(String(e));
+          }}
           onBuffer={() => console.log("ReactPlayer: Buffering...")}
+          fallback={<div style={{color: 'white', padding: '20px'}}>Loading player...</div>}
         />
       </div>
     </div>
