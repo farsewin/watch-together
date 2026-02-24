@@ -1,0 +1,136 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background-color: #1a1a2e;
+  color: #eaeaea;
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Room Container */
+.room-container {
+  background: #16213e;
+  padding: 2rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.room-container h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #e94560;
+  font-size: 2rem;
+}
+
+.room-actions {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.room-join {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.room-join input {
+  flex: 1;
+  max-width: 400px;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: #0f3460;
+  color: #eaeaea;
+}
+
+.room-join input::placeholder {
+  color: #888;
+}
+
+button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  background: #e94560;
+  color: white;
+  transition: background 0.2s;
+}
+
+button:hover:not(:disabled) {
+  background: #ff6b6b;
+}
+
+button:disabled {
+  background: #555;
+  cursor: not-allowed;
+}
+
+.status {
+  text-align: center;
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background: #0f3460;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.user-count {
+  text-align: center;
+  margin-top: 0.5rem;
+  color: #4ecca3;
+  font-weight: bold;
+}
+
+/* Video Section */
+.video-section {
+  background: #16213e;
+  padding: 1.5rem;
+  border-radius: 12px;
+}
+
+.video-url-input {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.video-url-input label {
+  white-space: nowrap;
+  color: #888;
+}
+
+.video-url-input input {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #0f3460;
+  color: #eaeaea;
+}
+
+/* Video Container */
+.video-container {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.video-container video {
+  display: block;
+  background: #000;
+}
