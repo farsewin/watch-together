@@ -8,6 +8,11 @@ function VideoPlayer({ roomId, videoUrl }) {
   const [playing, setPlaying] = useState(false);
   const [syncStatus, setSyncStatus] = useState("");
 
+  // Debug logging
+  console.log("VideoPlayer render - videoUrl:", videoUrl);
+  console.log("VideoPlayer render - roomId:", roomId);
+  console.log("ReactPlayer can play this URL:", ReactPlayer.canPlay(videoUrl));
+
   useEffect(() => {
     if (!roomId) return;
 
@@ -98,6 +103,11 @@ function VideoPlayer({ roomId, videoUrl }) {
   return (
     <div className="video-container">
       {syncStatus && <div className="sync-status">{syncStatus}</div>}
+      <div style={{ padding: '10px', background: '#222', color: '#0f0', fontSize: '12px', marginBottom: '10px' }}>
+        <div>DEBUG: URL = {videoUrl || 'EMPTY'}</div>
+        <div>DEBUG: Can Play = {String(ReactPlayer.canPlay(videoUrl))}</div>
+        <div>DEBUG: Room = {roomId || 'NONE'}</div>
+      </div>
       <div className="player-wrapper">
         <ReactPlayer
           ref={playerRef}
@@ -109,6 +119,9 @@ function VideoPlayer({ roomId, videoUrl }) {
           onPlay={handlePlay}
           onPause={handlePause}
           onSeek={handleSeek}
+          onReady={() => console.log("ReactPlayer: READY")}
+          onError={(e) => console.error("ReactPlayer ERROR:", e)}
+          onBuffer={() => console.log("ReactPlayer: Buffering...")}
           config={{
             youtube: {
               playerVars: {
