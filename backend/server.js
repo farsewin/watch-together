@@ -6,6 +6,14 @@ const cors = require("cors");
 const roomRoutes = require("./routes/room");
 const setupSocket = require("./socket");
 
+// Global error handlers
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+});
+process.on("unhandledRejection", (err) => {
+  console.error("Unhandled Rejection:", err);
+});
+
 const app = express();
 const server = http.createServer(app);
 
