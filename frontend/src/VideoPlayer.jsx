@@ -6,13 +6,7 @@ function VideoPlayer({ roomId, videoUrl }) {
   const playerRef = useRef(null);
   const isRemote = useRef(false);
   const [playing, setPlaying] = useState(false);
-  const [ready, setReady] = useState(false);
-  const [error, setError] = useState(null);
   const [syncStatus, setSyncStatus] = useState("");
-
-  // Debug logging
-  console.log("VideoPlayer render - videoUrl:", videoUrl);
-  console.log("VideoPlayer render - roomId:", roomId);
 
   useEffect(() => {
     if (!roomId) return;
@@ -113,8 +107,6 @@ function VideoPlayer({ roomId, videoUrl }) {
           onPlay={handlePlay}
           onPause={handlePause}
           onSeek={handleSeek}
-          onReady={() => setReady(true)}
-          onError={(e) => setError(String(e))}
         />
       </div>
     </div>
