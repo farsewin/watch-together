@@ -2,7 +2,9 @@ import { useState } from "react";
 import socket from "./socket";
 
 // Use environment variable or fallback to production URL
-const API_URL = import.meta.env.VITE_BACKEND_URL || "https://watch-together-production-7fd9.up.railway.app";
+const API_URL =
+  import.meta.env.VITE_BACKEND_URL ||
+  "https://watch-together-production-7fd9.up.railway.app";
 
 function Room({ onJoinRoom, roomId, setRoomId }) {
   const [status, setStatus] = useState("");
