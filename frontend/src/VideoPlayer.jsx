@@ -11,9 +11,12 @@ function VideoPlayer({ roomId, videoUrl }) {
   useEffect(() => {
     if (!roomId) return;
 
+    console.log("VideoPlayer: Setting up socket listeners for room:", roomId);
+    console.log("VideoPlayer: Socket connected?", socket.connected);
+
     // Handle incoming video events (play, pause, seek only)
     const handleVideoEvent = (data) => {
-      console.log("Received video event:", data);
+      console.log("VideoPlayer: Received video event:", data);
       isRemote.current = true;
 
       switch (data.event) {
@@ -22,20 +25,20 @@ function VideoPlayer({ roomId, videoUrl }) {
             playerRef.current.seekTo(data.currentTime, "seconds");
           }
           setPlaying(true);
-          setSyncStatus("Playing");
+          setSyncStatus("▶ Playing (synced)");
           break;
         case "pause":
           if (playerRef.current) {
             playerRef.current.seekTo(data.currentTime, "seconds");
           }
           setPlaying(false);
-          setSyncStatus("Paused");
+          setSyncStatus("⏸ Paused (synced)");
           break;
         case "seek":
           if (playerRef.current) {
             playerRef.current.seekTo(data.currentTime, "seconds");
           }
-          setSyncStatus(`Synced to ${Math.floor(data.currentTime)}s`);
+          setSyncStatus(`⏩ Synced to ${Math.floor(data.currentTime)}s`);
           break;
         default:
           break;
@@ -65,34 +68,39 @@ function VideoPlayer({ roomId, videoUrl }) {
   // Emit play event
   const handlePlay = () => {
     if (isRemote.current) return;
+    const time = getCurrentTime();
+    console.log("VideoPlayer: Emitting play event at", time);
     socket.emit("video-event", {
       roomId,
       event: "play",
-      currentTime: getCurrentTime(),
+      currentTime: time,
     });
-    setSyncStatus("Playing");
+    setSyncStatus("▶ Playing");
   };
 
   // Emit pause event
   const handlePause = () => {
     if (isRemote.current) return;
+    const time = getCurrentTime();
+    console.log("VideoPlayer: Emitting pause event at", time);
     socket.emit("video-event", {
       roomId,
       event: "pause",
-      currentTime: getCurrentTime(),
+      currentTime: time,
     });
-    setSyncStatus("Paused");
+    setSyncStatus("⏸ Paused");
   };
 
   // Emit seek event
   const handleSeek = (seconds) => {
     if (isRemote.current) return;
+    console.log("VideoPlayer: Emitting seek event to", seconds);
     socket.emit("video-event", {
       roomId,
       event: "seek",
       currentTime: seconds,
     });
-    setSyncStatus(`Seeked to ${Math.floor(seconds)}s`);
+    setSyncStatus(`⏩ Seeked to ${Math.floor(seconds)}s`);
   };
 
   return (
