@@ -22,10 +22,11 @@ body {
   overflow: hidden;
 }
 
+.player-wrapper > div,
 .player-wrapper video,
 .player-wrapper iframe {
-  width: 100%;
-  height: 100%;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .sync-status {
