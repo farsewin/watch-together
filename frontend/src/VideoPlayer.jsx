@@ -1,12 +1,13 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import socket from "./socket";
 
-const SYNC_INTERVAL = 3000; // 3 seconds
-const DRIFT_THRESHOLD = 0.5; // 0.5 seconds
+const SYNC_INTERVAL = 5000; // 5 seconds (increased)
+const DRIFT_THRESHOLD = 1.0; // 1 second (increased to reduce sensitivity)
 
 function VideoPlayer({ roomId, videoUrl }) {
   const videoRef = useRef(null);
   const isRemote = useRef(false);
+  const lastSyncTime = useRef(0);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -17,13 +18,20 @@ function VideoPlayer({ roomId, videoUrl }) {
       console.log("Received video event:", data);
       isRemote.current = true;
 
+      const timeDiff = Math.abs(video.currentTime - data.currentTime);
+
       switch (data.event) {
         case "play":
-          video.currentTime = data.currentTime;
-          video.play();
+          // Only adjust time if significantly different
+          if (timeDiff > 0.5) {
+            video.currentTime = data.currentTime;
+          }
+          video.play().catch(() => {});
           break;
         case "pause":
-          video.currentTime = data.currentTime;
+          if (timeDiff > 0.5) {
+            video.currentTime = data.currentTime;
+          }
           video.pause();
           break;
         case "seek":
@@ -33,31 +41,36 @@ function VideoPlayer({ roomId, videoUrl }) {
           break;
       }
 
-      // Reset flag after a short delay
+      // Reset flag after a longer delay
       setTimeout(() => {
         isRemote.current = false;
-      }, 100);
+      }, 500);
     };
 
     // Handle sync event (time drift correction)
     const handleSync = (data) => {
+      // Prevent sync if we recently synced
+      const now = Date.now();
+      if (now - lastSyncTime.current < 2000) return;
+
       const drift = Math.abs(video.currentTime - data.currentTime);
-      if (drift > DRIFT_THRESHOLD) {
+      if (drift > DRIFT_THRESHOLD && !video.paused) {
         console.log(`Drift detected: ${drift.toFixed(2)}s. Adjusting...`);
         isRemote.current = true;
+        lastSyncTime.current = now;
         video.currentTime = data.currentTime;
         setTimeout(() => {
           isRemote.current = false;
-        }, 100);
+        }, 500);
       }
     };
 
     socket.on("video-event", handleVideoEvent);
     socket.on("sync", handleSync);
 
-    // Sync interval - send current time every 3 seconds
+    // Sync interval - send current time every 5 seconds
     const syncInterval = setInterval(() => {
-      if (!video.paused) {
+      if (!video.paused && !isRemote.current) {
         socket.emit("sync", {
           roomId,
           currentTime: video.currentTime,
