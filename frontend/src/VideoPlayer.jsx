@@ -1,15 +1,15 @@
 import { useRef, useEffect, useState } from "react";
+import ReactPlayer from "react-player";
 import socket from "./socket";
 
 function VideoPlayer({ roomId, videoUrl }) {
-  const videoRef = useRef(null);
+  const playerRef = useRef(null);
   const isRemote = useRef(false);
-  const [pendingPlay, setPendingPlay] = useState(null);
+  const [playing, setPlaying] = useState(false);
   const [syncStatus, setSyncStatus] = useState("");
 
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !roomId) return;
+    if (!roomId) return;
 
     // Handle incoming video events (play, pause, seek only)
     const handleVideoEvent = (data) => {
@@ -18,34 +18,23 @@ function VideoPlayer({ roomId, videoUrl }) {
 
       switch (data.event) {
         case "play":
-          // Always set time first
-          video.currentTime = data.currentTime;
-          
-          // Try to play
-          const playPromise = video.play();
-          if (playPromise !== undefined) {
-            playPromise
-              .then(() => {
-                // Playing successfully
-                setSyncStatus("Playing");
-                setPendingPlay(null);
-              })
-              .catch((err) => {
-                // Autoplay blocked - show tap to play
-                console.log("Autoplay blocked:", err);
-                setSyncStatus("Tap to play");
-                setPendingPlay(data.currentTime);
-              });
+          if (playerRef.current) {
+            playerRef.current.seekTo(data.currentTime, "seconds");
           }
+          setPlaying(true);
+          setSyncStatus("Playing");
           break;
         case "pause":
-          video.currentTime = data.currentTime;
-          video.pause();
-          setPendingPlay(null);
+          if (playerRef.current) {
+            playerRef.current.seekTo(data.currentTime, "seconds");
+          }
+          setPlaying(false);
           setSyncStatus("Paused");
           break;
         case "seek":
-          video.currentTime = data.currentTime;
+          if (playerRef.current) {
+            playerRef.current.seekTo(data.currentTime, "seconds");
+          }
           setSyncStatus(`Synced to ${Math.floor(data.currentTime)}s`);
           break;
         default:
@@ -65,72 +54,69 @@ function VideoPlayer({ roomId, videoUrl }) {
     };
   }, [roomId]);
 
+  // Get current time from player
+  const getCurrentTime = () => {
+    if (playerRef.current) {
+      return playerRef.current.getCurrentTime() || 0;
+    }
+    return 0;
+  };
+
   // Emit play event
   const handlePlay = () => {
-    setPendingPlay(null);
     if (isRemote.current) return;
-    const video = videoRef.current;
     socket.emit("video-event", {
       roomId,
       event: "play",
-      currentTime: video.currentTime,
+      currentTime: getCurrentTime(),
     });
+    setSyncStatus("Playing");
   };
 
   // Emit pause event
   const handlePause = () => {
     if (isRemote.current) return;
-    const video = videoRef.current;
     socket.emit("video-event", {
       roomId,
       event: "pause",
-      currentTime: video.currentTime,
+      currentTime: getCurrentTime(),
     });
+    setSyncStatus("Paused");
   };
 
   // Emit seek event
-  const handleSeeked = () => {
+  const handleSeek = (seconds) => {
     if (isRemote.current) return;
-    const video = videoRef.current;
     socket.emit("video-event", {
       roomId,
       event: "seek",
-      currentTime: video.currentTime,
+      currentTime: seconds,
     });
-  };
-
-  // Handle manual play for mobile (when autoplay is blocked)
-  const handleManualPlay = () => {
-    const video = videoRef.current;
-    if (pendingPlay !== null) {
-      video.currentTime = pendingPlay;
-    }
-    video.play().then(() => {
-      setSyncStatus("Playing");
-    });
-    setPendingPlay(null);
+    setSyncStatus(`Seeked to ${Math.floor(seconds)}s`);
   };
 
   return (
     <div className="video-container">
       {syncStatus && <div className="sync-status">{syncStatus}</div>}
-      {pendingPlay !== null && (
-        <div className="play-prompt" onClick={handleManualPlay}>
-          <button className="play-btn">▶ Tap to Play</button>
-          <p className="play-hint">Other user started playing</p>
-        </div>
-      )}
-      <video
-        ref={videoRef}
-        src={videoUrl}
+      <ReactPlayer
+        ref={playerRef}
+        url={videoUrl}
         controls
-        playsInline
-        webkit-playsinline="true"
-        muted={false}
+        playing={playing}
+        width="100%"
+        height="auto"
+        style={{ aspectRatio: "16/9" }}
         onPlay={handlePlay}
         onPause={handlePause}
-        onSeeked={handleSeeked}
-        width="100%"
+        onSeek={handleSeek}
+        config={{
+          youtube: {
+            playerVars: {
+              origin: window.location.origin,
+              modestbranding: 1,
+            },
+          },
+        }}
       />
     </div>
   );
