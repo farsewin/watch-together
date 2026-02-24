@@ -1,9 +1,10 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import socket from "./socket";
 
 function VideoPlayer({ roomId, videoUrl }) {
   const videoRef = useRef(null);
   const isRemote = useRef(false);
+  const [pendingPlay, setPendingPlay] = useState(null);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -17,11 +18,16 @@ function VideoPlayer({ roomId, videoUrl }) {
       switch (data.event) {
         case "play":
           video.currentTime = data.currentTime;
-          video.play().catch(() => {});
+          // Try to play, if blocked on mobile show notification
+          video.play().catch((err) => {
+            console.log("Autoplay blocked, user needs to tap play");
+            setPendingPlay(data.currentTime);
+          });
           break;
         case "pause":
           video.currentTime = data.currentTime;
           video.pause();
+          setPendingPlay(null);
           break;
         case "seek":
           video.currentTime = data.currentTime;
@@ -45,6 +51,7 @@ function VideoPlayer({ roomId, videoUrl }) {
 
   // Emit play event
   const handlePlay = () => {
+    setPendingPlay(null);
     if (isRemote.current) return;
     const video = videoRef.current;
     socket.emit("video-event", {
@@ -76,12 +83,29 @@ function VideoPlayer({ roomId, videoUrl }) {
     });
   };
 
+  // Handle manual play for mobile (when autoplay is blocked)
+  const handleManualPlay = () => {
+    const video = videoRef.current;
+    if (pendingPlay !== null) {
+      video.currentTime = pendingPlay;
+    }
+    video.play();
+    setPendingPlay(null);
+  };
+
   return (
     <div className="video-container">
+      {pendingPlay !== null && (
+        <div className="play-prompt" onClick={handleManualPlay}>
+          <button className="play-btn">▶ Tap to Play</button>
+        </div>
+      )}
       <video
         ref={videoRef}
         src={videoUrl}
         controls
+        playsInline
+        webkit-playsinline="true"
         onPlay={handlePlay}
         onPause={handlePause}
         onSeeked={handleSeeked}

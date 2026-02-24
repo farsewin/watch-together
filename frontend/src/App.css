@@ -128,9 +128,39 @@ button:disabled {
 .video-container {
   border-radius: 8px;
   overflow: hidden;
+  position: relative;
 }
 
 .video-container video {
   display: block;
   background: #000;
+}
+
+/* Mobile play prompt */
+.play-prompt {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  cursor: pointer;
+}
+
+.play-btn {
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  background: #e94560;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.play-btn:hover {
+  background: #ff6b6b;
 }
