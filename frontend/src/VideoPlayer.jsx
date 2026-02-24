@@ -5,6 +5,7 @@ function VideoPlayer({ roomId, videoUrl }) {
   const videoRef = useRef(null);
   const isRemote = useRef(false);
   const [pendingPlay, setPendingPlay] = useState(null);
+  const [syncStatus, setSyncStatus] = useState("");
 
   useEffect(() => {
     const video = videoRef.current;
@@ -17,20 +18,35 @@ function VideoPlayer({ roomId, videoUrl }) {
 
       switch (data.event) {
         case "play":
+          // Always set time first
           video.currentTime = data.currentTime;
-          // Try to play, if blocked on mobile show notification
-          video.play().catch((err) => {
-            console.log("Autoplay blocked, user needs to tap play");
-            setPendingPlay(data.currentTime);
-          });
+          
+          // Try to play
+          const playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                // Playing successfully
+                setSyncStatus("Playing");
+                setPendingPlay(null);
+              })
+              .catch((err) => {
+                // Autoplay blocked - show tap to play
+                console.log("Autoplay blocked:", err);
+                setSyncStatus("Tap to play");
+                setPendingPlay(data.currentTime);
+              });
+          }
           break;
         case "pause":
           video.currentTime = data.currentTime;
           video.pause();
           setPendingPlay(null);
+          setSyncStatus("Paused");
           break;
         case "seek":
           video.currentTime = data.currentTime;
+          setSyncStatus(`Synced to ${Math.floor(data.currentTime)}s`);
           break;
         default:
           break;
@@ -89,15 +105,19 @@ function VideoPlayer({ roomId, videoUrl }) {
     if (pendingPlay !== null) {
       video.currentTime = pendingPlay;
     }
-    video.play();
+    video.play().then(() => {
+      setSyncStatus("Playing");
+    });
     setPendingPlay(null);
   };
 
   return (
     <div className="video-container">
+      {syncStatus && <div className="sync-status">{syncStatus}</div>}
       {pendingPlay !== null && (
         <div className="play-prompt" onClick={handleManualPlay}>
           <button className="play-btn">▶ Tap to Play</button>
+          <p className="play-hint">Other user started playing</p>
         </div>
       )}
       <video
@@ -106,6 +126,7 @@ function VideoPlayer({ roomId, videoUrl }) {
         controls
         playsInline
         webkit-playsinline="true"
+        muted={false}
         onPlay={handlePlay}
         onPause={handlePause}
         onSeeked={handleSeeked}
