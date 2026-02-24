@@ -103,10 +103,18 @@ function VideoPlayer({ roomId, videoUrl }) {
   return (
     <div className="video-container">
       {syncStatus && <div className="sync-status">{syncStatus}</div>}
-      <div style={{ padding: '10px', background: '#222', color: '#0f0', fontSize: '12px', marginBottom: '10px' }}>
-        <div>DEBUG: URL = {videoUrl || 'EMPTY'}</div>
+      <div
+        style={{
+          padding: "10px",
+          background: "#222",
+          color: "#0f0",
+          fontSize: "12px",
+          marginBottom: "10px",
+        }}
+      >
+        <div>DEBUG: URL = {videoUrl || "EMPTY"}</div>
         <div>DEBUG: Can Play = {String(ReactPlayer.canPlay(videoUrl))}</div>
-        <div>DEBUG: Room = {roomId || 'NONE'}</div>
+        <div>DEBUG: Room = {roomId || "NONE"}</div>
       </div>
       <div className="player-wrapper">
         <ReactPlayer
