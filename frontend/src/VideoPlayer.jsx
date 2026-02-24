@@ -131,7 +131,6 @@ function VideoPlayer({ roomId, videoUrl }) {
           onError={(e) => console.error("ReactPlayer ERROR:", e)}
           onBuffer={() => console.log("ReactPlayer: Buffering...")}
         />
-        />
       </div>
     </div>
   );
