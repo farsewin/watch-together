@@ -120,7 +120,7 @@ function VideoPlayer({ roomId, videoUrl }) {
         <ReactPlayer
           ref={playerRef}
           url={videoUrl}
-          controls
+          controls={true}
           playing={playing}
           width="100%"
           height="100%"
@@ -130,14 +130,7 @@ function VideoPlayer({ roomId, videoUrl }) {
           onReady={() => console.log("ReactPlayer: READY")}
           onError={(e) => console.error("ReactPlayer ERROR:", e)}
           onBuffer={() => console.log("ReactPlayer: Buffering...")}
-          config={{
-            youtube: {
-              playerVars: {
-                origin: window.location.origin,
-                modestbranding: 1,
-              },
-            },
-          }}
+        />
         />
       </div>
     </div>
