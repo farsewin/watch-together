@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import ReactPlayer from "react-player/lazy";
+import ReactPlayer from "react-player";
 import socket from "./socket";
 
 function VideoPlayer({ roomId, videoUrl }) {
@@ -121,11 +121,10 @@ function VideoPlayer({ roomId, videoUrl }) {
       <div className="player-wrapper">
         <ReactPlayer
           ref={playerRef}
-          url={videoUrl}
+          src={videoUrl}
           controls={true}
           playing={playing}
-          width="100%"
-          height="100%"
+          style={{ width: "100%", height: "auto", aspectRatio: "16/9" }}
           onPlay={handlePlay}
           onPause={handlePause}
           onSeek={handleSeek}
@@ -138,7 +137,6 @@ function VideoPlayer({ roomId, videoUrl }) {
             setError(String(e));
           }}
           onBuffer={() => console.log("ReactPlayer: Buffering...")}
-          fallback={<div style={{color: 'white', padding: '20px'}}>Loading player...</div>}
         />
       </div>
     </div>
