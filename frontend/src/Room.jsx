@@ -1,7 +1,7 @@
 import { useState } from "react";
 import socket from "./socket";
 
-const API_URL = "http://localhost:3001";
+const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
 function Room({ onJoinRoom, roomId, setRoomId }) {
   const [status, setStatus] = useState("");
