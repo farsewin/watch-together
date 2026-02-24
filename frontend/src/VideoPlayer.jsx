@@ -98,26 +98,27 @@ function VideoPlayer({ roomId, videoUrl }) {
   return (
     <div className="video-container">
       {syncStatus && <div className="sync-status">{syncStatus}</div>}
-      <ReactPlayer
-        ref={playerRef}
-        url={videoUrl}
-        controls
-        playing={playing}
-        width="100%"
-        height="auto"
-        style={{ aspectRatio: "16/9" }}
-        onPlay={handlePlay}
-        onPause={handlePause}
-        onSeek={handleSeek}
-        config={{
-          youtube: {
-            playerVars: {
-              origin: window.location.origin,
-              modestbranding: 1,
+      <div className="player-wrapper">
+        <ReactPlayer
+          ref={playerRef}
+          url={videoUrl}
+          controls
+          playing={playing}
+          width="100%"
+          height="100%"
+          onPlay={handlePlay}
+          onPause={handlePause}
+          onSeek={handleSeek}
+          config={{
+            youtube: {
+              playerVars: {
+                origin: window.location.origin,
+                modestbranding: 1,
+              },
             },
-          },
-        }}
-      />
+          }}
+        />
+      </div>
     </div>
   );
 }
