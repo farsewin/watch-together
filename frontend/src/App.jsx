@@ -13,9 +13,15 @@ function App() {
   const [isHost, setIsHost] = useState(false);
   const [videoUrl, setVideoUrl] = useState(DEFAULT_VIDEO);
 
-  const handleJoinRoom = (id, hostStatus) => {
+  const handleJoinRoom = (id, hostStatus, videoState) => {
     setJoinedRoom(id);
     setIsHost(hostStatus);
+
+    // Restore video state from Redis on reconnect
+    if (videoState && videoState.url) {
+      console.log("Restoring video state:", videoState);
+      setVideoUrl(videoState.url);
+    }
   };
 
   // Sync video URL between users

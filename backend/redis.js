@@ -150,6 +150,35 @@ async function getRoomData(roomId) {
   return { host, users, userCount: users.length };
 }
 
+// ============== Video State Operations ==============
+
+// Save video state (URL, currentTime, playing)
+async function saveVideoState(roomId, state) {
+  const stateKey = `room:${roomId}:video`;
+  await redisClient.hSet(stateKey, {
+    url: state.url || "",
+    currentTime: String(state.currentTime || 0),
+    playing: state.playing ? "1" : "0",
+  });
+  await redisClient.expire(stateKey, ROOM_TTL);
+}
+
+// Get video state
+async function getVideoState(roomId) {
+  const stateKey = `room:${roomId}:video`;
+  const state = await redisClient.hGetAll(stateKey);
+
+  if (!state || Object.keys(state).length === 0) {
+    return null;
+  }
+
+  return {
+    url: state.url || "",
+    currentTime: parseFloat(state.currentTime) || 0,
+    playing: state.playing === "1",
+  };
+}
+
 module.exports = {
   redisClient,
   redisPub,
@@ -163,4 +192,6 @@ module.exports = {
   leaveRoom,
   isHost,
   getRoomData,
+  saveVideoState,
+  getVideoState,
 };

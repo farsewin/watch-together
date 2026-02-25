@@ -6,6 +6,8 @@ const {
   isHost,
   getRoomData,
   getRoomUserCount,
+  saveVideoState,
+  getVideoState,
 } = require("./redis");
 
 function setupSocket(io) {
@@ -34,6 +36,9 @@ function setupSocket(io) {
           socket.join(roomId);
           socket.roomId = roomId;
 
+          // Get saved video state for reconnection
+          const videoState = await getVideoState(roomId);
+
           console.log(
             `User ${socket.id} created room ${roomId} as HOST. Users: ${result.userCount}`,
           );
@@ -42,6 +47,7 @@ function setupSocket(io) {
             roomId,
             userCount: result.userCount,
             isHost: true,
+            videoState,
           });
         } else {
           // Room exists with users - try to join
@@ -64,10 +70,14 @@ function setupSocket(io) {
             `User ${socket.id} joined room ${roomId} as ${userIsHost ? "HOST" : "GUEST"}. Users: ${result.userCount}`,
           );
 
+          // Get saved video state for guest
+          const videoState = await getVideoState(roomId);
+
           socket.emit("room-joined", {
             roomId,
             userCount: result.userCount,
             isHost: userIsHost,
+            videoState,
           });
 
           // Notify other user in room
@@ -97,6 +107,12 @@ function setupSocket(io) {
           `Video event from HOST ${socket.id}: ${event} at ${currentTime}s`,
         );
 
+        // Save video state to Redis
+        await saveVideoState(roomId, {
+          currentTime,
+          playing: event === "play",
+        });
+
         // Broadcast to other users in the room
         socket.to(roomId).emit("video-event", {
           event,
@@ -121,6 +137,9 @@ function setupSocket(io) {
         }
 
         console.log(`URL change from HOST ${socket.id}: ${url}`);
+
+        // Save URL to Redis
+        await saveVideoState(roomId, { url, currentTime: 0, playing: false });
 
         // Broadcast to other users in the room
         socket.to(roomId).emit("url-change", {
