@@ -83,9 +83,9 @@ async function joinRoom(roomId, socketId) {
     return { error: "Room not found" };
   }
 
-  // Check room is not full (max 2 users)
+  // Check room is not full (max 5 users)
   const userCount = await getRoomUserCount(roomId);
-  if (userCount >= 2) {
+  if (userCount >= 5) {
     return { error: "Room is full" };
   }
 
