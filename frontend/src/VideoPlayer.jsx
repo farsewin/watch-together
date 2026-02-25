@@ -157,6 +157,3 @@ function VideoPlayer({ roomId, videoUrl }) {
 }
 
 export default VideoPlayer;
-}
-
-export default VideoPlayer;
