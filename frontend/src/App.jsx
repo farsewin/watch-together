@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Room from "./Room";
 import VideoPlayer from "./VideoPlayer";
+import socket from "./socket";
 import "./App.css";
 
 // Default sample video URL
@@ -15,6 +16,36 @@ function App() {
     setJoinedRoom(id);
   };
 
+  // Sync video URL between users
+  useEffect(() => {
+    if (!joinedRoom) return;
+
+    const handleUrlChange = (data) => {
+      console.log("Received URL change:", data.url);
+      setVideoUrl(data.url);
+    };
+
+    socket.on("url-change", handleUrlChange);
+
+    return () => {
+      socket.off("url-change", handleUrlChange);
+    };
+  }, [joinedRoom]);
+
+  // Handle URL input change and broadcast to other user
+  const handleUrlChange = (e) => {
+    const newUrl = e.target.value;
+    setVideoUrl(newUrl);
+  };
+
+  // Broadcast URL when user finishes typing (on blur or Enter)
+  const broadcastUrl = () => {
+    if (joinedRoom && videoUrl) {
+      console.log("Broadcasting URL:", videoUrl);
+      socket.emit("url-change", { roomId: joinedRoom, url: videoUrl });
+    }
+  };
+
   return (
     <div className="app">
       <Room onJoinRoom={handleJoinRoom} roomId={roomId} setRoomId={setRoomId} />
@@ -26,7 +57,9 @@ function App() {
             <input
               type="text"
               value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
+              onChange={handleUrlChange}
+              onBlur={broadcastUrl}
+              onKeyDown={(e) => e.key === "Enter" && broadcastUrl()}
               placeholder="Enter video URL"
             />
           </div>

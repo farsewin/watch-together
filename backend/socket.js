@@ -50,6 +50,18 @@ function setupSocket(io) {
       });
     });
 
+    // Handle URL change
+    socket.on("url-change", (data) => {
+      const { roomId, url } = data;
+      console.log(`URL change from ${socket.id}: ${url}`);
+
+      // Broadcast to other users in the room
+      socket.to(roomId).emit("url-change", {
+        url,
+        senderId: socket.id,
+      });
+    });
+
     // Handle sync event (every 3 seconds)
     socket.on("sync", (data) => {
       const { roomId, currentTime } = data;
