@@ -266,3 +266,35 @@ button:disabled {
   text-align: center;
 }
 
+/* Users List */
+.room-info {
+  margin-top: 1rem;
+}
+
+.users-list {
+  background: #0f3460;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+
+.users-list strong {
+  color: #4ecca3;
+}
+
+.users-list ul {
+  list-style: none;
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.users-list li {
+  background: #16213e;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  border: 1px solid #4ecca3;
+}
+

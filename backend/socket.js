@@ -8,6 +8,9 @@ const {
   getRoomUserCount,
   saveVideoState,
   getVideoState,
+  saveUsername,
+  removeUsername,
+  getRoomUsernames,
 } = require("./redis");
 
 function setupSocket(io) {
@@ -15,8 +18,12 @@ function setupSocket(io) {
     console.log(`User connected: ${socket.id}`);
 
     // Handle room join (async)
-    socket.on("join-room", async (roomId) => {
+    socket.on("join-room", async (data) => {
       try {
+        // Support both old format (string) and new format (object)
+        const roomId = typeof data === "string" ? data : data.roomId;
+        const username = typeof data === "object" ? data.username : "Anonymous";
+
         const exists = await roomExists(roomId);
 
         // Room must be created via /create-room endpoint first
@@ -35,12 +42,17 @@ function setupSocket(io) {
           const result = await createRoom(roomId, socket.id);
           socket.join(roomId);
           socket.roomId = roomId;
+          socket.username = username;
+
+          // Save username to Redis
+          await saveUsername(roomId, socket.id, username);
+          const users = await getRoomUsernames(roomId);
 
           // Get saved video state for reconnection
           const videoState = await getVideoState(roomId);
 
           console.log(
-            `User ${socket.id} created room ${roomId} as HOST. Users: ${result.userCount}`,
+            `User ${username} (${socket.id}) created room ${roomId} as HOST. Users: ${result.userCount}`,
           );
 
           socket.emit("room-joined", {
@@ -48,6 +60,7 @@ function setupSocket(io) {
             userCount: result.userCount,
             isHost: true,
             videoState,
+            users,
           });
         } else {
           // Room exists with users - try to join
@@ -63,11 +76,16 @@ function setupSocket(io) {
 
           socket.join(roomId);
           socket.roomId = roomId;
+          socket.username = username;
+
+          // Save username to Redis
+          await saveUsername(roomId, socket.id, username);
+          const users = await getRoomUsernames(roomId);
 
           const userIsHost = result.host === socket.id;
 
           console.log(
-            `User ${socket.id} joined room ${roomId} as ${userIsHost ? "HOST" : "GUEST"}. Users: ${result.userCount}`,
+            `User ${username} (${socket.id}) joined room ${roomId} as ${userIsHost ? "HOST" : "GUEST"}. Users: ${result.userCount}`,
           );
 
           // Get saved video state for guest
@@ -78,12 +96,17 @@ function setupSocket(io) {
             userCount: result.userCount,
             isHost: userIsHost,
             videoState,
+            users,
           });
 
-          // Notify other user in room
+          // Notify other users in room with updated user list
           socket
             .to(roomId)
-            .emit("user-joined", { userCount: result.userCount });
+            .emit("user-joined", {
+              userCount: result.userCount,
+              users,
+              username,
+            });
         }
       } catch (err) {
         console.error("Error joining room:", err);
@@ -185,23 +208,31 @@ function setupSocket(io) {
 
     // Handle disconnection
     socket.on("disconnect", async () => {
-      console.log(`User disconnected: ${socket.id}`);
+      console.log(`User ${socket.username || socket.id} disconnected`);
 
       if (socket.roomId) {
         try {
+          // Remove username from Redis
+          await removeUsername(socket.roomId, socket.id);
+
           const result = await leaveRoom(socket.roomId, socket.id);
 
           console.log(
-            `User ${socket.id} left room ${socket.roomId}. Users remaining: ${result.userCount}`,
+            `User ${socket.username || socket.id} left room ${socket.roomId}. Users remaining: ${result.userCount}`,
           );
 
           if (result.deleted) {
             console.log(`Room ${socket.roomId} deleted (empty)`);
           } else {
-            // Notify remaining users
+            // Get updated user list and notify remaining users
+            const users = await getRoomUsernames(socket.roomId);
             socket
               .to(socket.roomId)
-              .emit("user-left", { userCount: result.userCount });
+              .emit("user-left", {
+                userCount: result.userCount,
+                users,
+                username: socket.username,
+              });
           }
         } catch (err) {
           console.error("Error handling disconnect:", err);

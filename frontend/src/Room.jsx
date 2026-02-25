@@ -10,6 +10,8 @@ function Room({ onJoinRoom, roomId, setRoomId }) {
   const [status, setStatus] = useState("");
   const [userCount, setUserCount] = useState(0);
   const [isJoined, setIsJoined] = useState(false);
+  const [username, setUsername] = useState("");
+  const [users, setUsers] = useState({});
 
   // Create a new room
   const createRoom = async () => {
@@ -33,11 +35,17 @@ function Room({ onJoinRoom, roomId, setRoomId }) {
       return;
     }
 
+    if (!username.trim()) {
+      setStatus("Please enter your name");
+      return;
+    }
+
     socket.connect();
 
     socket.on("room-joined", (data) => {
       setStatus(`Joined room successfully!`);
       setUserCount(data.userCount);
+      setUsers(data.users || {});
       setIsJoined(true);
       onJoinRoom(data.roomId, data.isHost, data.videoState);
     });
@@ -48,15 +56,17 @@ function Room({ onJoinRoom, roomId, setRoomId }) {
 
     socket.on("user-joined", (data) => {
       setUserCount(data.userCount);
-      setStatus("Another user joined the room!");
+      setUsers(data.users || {});
+      setStatus(`${data.username} joined the room!`);
     });
 
     socket.on("user-left", (data) => {
       setUserCount(data.userCount);
-      setStatus("User left the room");
+      setUsers(data.users || {});
+      setStatus(`${data.username || "User"} left the room`);
     });
 
-    socket.emit("join-room", roomId);
+    socket.emit("join-room", { roomId, username });
   };
 
   return (
@@ -72,18 +82,38 @@ function Room({ onJoinRoom, roomId, setRoomId }) {
       <div className="room-join">
         <input
           type="text"
+          placeholder="Your Name"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          disabled={isJoined}
+        />
+        <input
+          type="text"
           placeholder="Enter Room ID"
           value={roomId}
           onChange={(e) => setRoomId(e.target.value)}
           disabled={isJoined}
         />
-        <button onClick={joinRoom} disabled={isJoined || !roomId}>
+        <button onClick={joinRoom} disabled={isJoined || !roomId || !username}>
           Join Room
         </button>
       </div>
 
       {status && <p className="status">{status}</p>}
-      {isJoined && <p className="user-count">Users in room: {userCount}</p>}
+
+      {isJoined && (
+        <div className="room-info">
+          <p className="user-count">Users in room: {userCount}</p>
+          <div className="users-list">
+            <strong>Online:</strong>
+            <ul>
+              {Object.values(users).map((name, index) => (
+                <li key={index}>{name}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

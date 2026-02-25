@@ -179,6 +179,34 @@ async function getVideoState(roomId) {
   };
 }
 
+// ============== Username Operations ==============
+
+// Save username for a socket
+async function saveUsername(roomId, socketId, username) {
+  const namesKey = `room:${roomId}:names`;
+  await redisClient.hSet(namesKey, socketId, username);
+  await redisClient.expire(namesKey, ROOM_TTL);
+}
+
+// Remove username when user leaves
+async function removeUsername(roomId, socketId) {
+  const namesKey = `room:${roomId}:names`;
+  await redisClient.hDel(namesKey, socketId);
+}
+
+// Get all usernames in room
+async function getRoomUsernames(roomId) {
+  const namesKey = `room:${roomId}:names`;
+  const names = await redisClient.hGetAll(namesKey);
+  return names || {};
+}
+
+// Get username for a specific socket
+async function getUsername(roomId, socketId) {
+  const namesKey = `room:${roomId}:names`;
+  return await redisClient.hGet(namesKey, socketId);
+}
+
 module.exports = {
   redisClient,
   redisPub,
@@ -194,4 +222,8 @@ module.exports = {
   getRoomData,
   saveVideoState,
   getVideoState,
+  saveUsername,
+  removeUsername,
+  getRoomUsernames,
+  getUsername,
 };
