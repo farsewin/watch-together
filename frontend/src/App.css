@@ -223,3 +223,46 @@ button:disabled {
   aspect-ratio: 16 / 9;
   background: #000;
 }
+
+/* Mobile activation overlay */
+.activation-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  cursor: pointer;
+}
+
+.activate-btn {
+  padding: 1.2rem 2.5rem;
+  font-size: 1.3rem;
+  background: linear-gradient(135deg, #4ecca3, #32a87d);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 4px 15px rgba(78, 204, 163, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.activate-btn:hover,
+.activate-btn:active {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(78, 204, 163, 0.6);
+}
+
+.activate-hint {
+  margin-top: 1rem;
+  color: #aaa;
+  font-size: 0.9rem;
+  text-align: center;
+}
+

@@ -7,6 +7,8 @@ function MobileVideoPlayer({ roomId, videoUrl, isHost }) {
   const isRemote = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [syncStatus, setSyncStatus] = useState("");
+  const [activated, setActivated] = useState(false);
+  const [pendingSync, setPendingSync] = useState(null);
 
   useEffect(() => {
     if (!roomId) return;
@@ -18,6 +20,14 @@ function MobileVideoPlayer({ roomId, videoUrl, isHost }) {
 
     const handleVideoEvent = (data) => {
       console.log("MobileVideoPlayer: Received video event:", data);
+
+      // If not activated yet, store pending sync and prompt user
+      if (!activated) {
+        console.log("MobileVideoPlayer: Not activated, storing pending sync");
+        setPendingSync(data);
+        return;
+      }
+
       isRemote.current = true;
 
       const player = playerRef.current?.getInternalPlayer();
@@ -45,7 +55,27 @@ function MobileVideoPlayer({ roomId, videoUrl, isHost }) {
     return () => {
       socket.off("video-event", handleVideoEvent);
     };
-  }, [roomId]);
+  }, [roomId, activated]);
+
+  // Handle user activation - must be triggered by user gesture
+  const handleActivate = () => {
+    console.log("MobileVideoPlayer: User activated playback");
+    setActivated(true);
+
+    // Apply any pending sync after activation
+    if (pendingSync) {
+      console.log("MobileVideoPlayer: Applying pending sync", pendingSync);
+      const player = playerRef.current?.getInternalPlayer();
+      if (player && player.seekTo) {
+        player.seekTo(pendingSync.currentTime, true);
+      }
+      if (pendingSync.event === "play") {
+        setPlaying(true);
+        setSyncStatus("▶ Playing (synced)");
+      }
+      setPendingSync(null);
+    }
+  };
 
   const getCurrentTime = () => {
     if (playerRef.current) {
@@ -55,6 +85,11 @@ function MobileVideoPlayer({ roomId, videoUrl, isHost }) {
   };
 
   const handlePlay = () => {
+    // Ensure activated on any play interaction
+    if (!activated) {
+      setActivated(true);
+    }
+
     if (isRemote.current || !isHost) return;
     const time = getCurrentTime();
     console.log("MobileVideoPlayer: Host emitting play at", time);
@@ -90,24 +125,47 @@ function MobileVideoPlayer({ roomId, videoUrl, isHost }) {
     setSyncStatus(`⏩ Seeked to ${Math.floor(time)}s`);
   };
 
+  const handleError = (error) => {
+    console.log("MobileVideoPlayer error:", error);
+    // Don't crash on NotAllowedError - just wait for user gesture
+    if (error?.name === "NotAllowedError") {
+      setActivated(false);
+      setPlaying(false);
+    }
+  };
+
   return (
     <div className="video-container">
       {syncStatus && <div className="sync-status">{syncStatus}</div>}
       <div className="device-indicator">📱 Mobile Mode</div>
+
+      {/* Activation overlay - must tap to start on mobile */}
+      {!activated && (
+        <div className="activation-overlay" onClick={handleActivate}>
+          <button className="activate-btn" type="button">
+            ▶ Tap to Start Watching
+          </button>
+          <p className="activate-hint">
+            {pendingSync
+              ? "Host started video - tap to sync"
+              : "Tap to enable video playback"}
+          </p>
+        </div>
+      )}
+
       <div className="player-wrapper">
         <ReactPlayer
           ref={playerRef}
           url={videoUrl}
           controls={true}
-          playing={playing}
+          playing={activated && playing}
           playsInline={true}
-          crossOrigin="anonymous"
           width="100%"
           height="100%"
           onPlay={handlePlay}
           onPause={handlePause}
           onSeek={handleSeek}
-          onError={(e) => console.log("MobileVideoPlayer error:", e)}
+          onError={handleError}
           config={{
             youtube: {
               playerVars: {
@@ -125,11 +183,7 @@ function MobileVideoPlayer({ roomId, videoUrl, isHost }) {
                 "x5-playsinline": "true",
                 "x5-video-player-type": "h5",
                 "x5-video-player-fullscreen": "true",
-                preload: "auto",
-                crossOrigin: "anonymous",
-              },
-            },
-          }}
+                preload: "metadata",
               },
             },
           }}
