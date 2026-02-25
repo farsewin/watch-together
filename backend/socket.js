@@ -62,6 +62,17 @@ function setupSocket(io) {
       });
     });
 
+    // Handle URL request (new user wants current URL)
+    socket.on("request-url", (data) => {
+      const { roomId } = data;
+      console.log(`URL request from ${socket.id} in room ${roomId}`);
+
+      // Ask other users in the room to share their URL
+      socket.to(roomId).emit("request-url", {
+        senderId: socket.id,
+      });
+    });
+
     // Handle sync event (every 3 seconds)
     socket.on("sync", (data) => {
       const { roomId, currentTime } = data;

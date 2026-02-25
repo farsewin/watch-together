@@ -135,17 +135,28 @@ function VideoPlayer({ roomId, videoUrl }) {
             url={videoUrl}
             controls={true}
             playing={playing}
+            playsinline={true}
             width="100%"
             height="100%"
             onPlay={handlePlay}
             onPause={handlePause}
             onSeek={handleSeek}
+            config={{
+              youtube: {
+                playerVars: {
+                  playsinline: 1,
+                },
+              },
+            }}
           />
         ) : (
           <video
             ref={videoRef}
             src={videoUrl}
             controls
+            playsInline
+            webkit-playsinline="true"
+            preload="metadata"
             onPlay={handlePlay}
             onPause={handlePause}
             onSeeked={handleSeek}
