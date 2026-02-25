@@ -2,13 +2,21 @@ import { useRef, useEffect, useState } from "react";
 import ReactPlayer from "react-player";
 import socket from "./socket";
 
+// Check if URL is YouTube
+const isYouTube = (url) => {
+  return url && (url.includes("youtube.com") || url.includes("youtu.be"));
+};
+
 function MobileVideoPlayer({ roomId, videoUrl, isHost }) {
+  const videoRef = useRef(null);
   const playerRef = useRef(null);
   const isRemote = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [syncStatus, setSyncStatus] = useState("");
   const [activated, setActivated] = useState(false);
   const [pendingSync, setPendingSync] = useState(null);
+
+  const isYT = isYouTube(videoUrl);
 
   useEffect(() => {
     if (!roomId) return;
@@ -30,19 +38,40 @@ function MobileVideoPlayer({ roomId, videoUrl, isHost }) {
 
       isRemote.current = true;
 
-      const player = playerRef.current?.getInternalPlayer();
-      if (player && player.seekTo) {
-        player.seekTo(data.currentTime, true);
-      }
+      if (isYT) {
+        // YouTube via ReactPlayer
+        const player = playerRef.current?.getInternalPlayer();
+        if (player && player.seekTo) {
+          player.seekTo(data.currentTime, true);
+        }
+        if (data.event === "play") {
+          setPlaying(true);
+          setSyncStatus("▶ Playing (synced)");
+        } else if (data.event === "pause") {
+          setPlaying(false);
+          setSyncStatus("⏸ Paused (synced)");
+        } else if (data.event === "seek") {
+          setSyncStatus(`⏩ Synced to ${Math.floor(data.currentTime)}s`);
+        }
+      } else {
+        // Native HTML5 video
+        const video = videoRef.current;
+        if (!video) return;
 
-      if (data.event === "play") {
-        setPlaying(true);
-        setSyncStatus("▶ Playing (synced)");
-      } else if (data.event === "pause") {
-        setPlaying(false);
-        setSyncStatus("⏸ Paused (synced)");
-      } else if (data.event === "seek") {
-        setSyncStatus(`⏩ Synced to ${Math.floor(data.currentTime)}s`);
+        if (data.event === "play") {
+          video.currentTime = data.currentTime;
+          video.play().catch((e) => {
+            console.log("MobileVideoPlayer: play() failed:", e);
+          });
+          setSyncStatus("▶ Playing (synced)");
+        } else if (data.event === "pause") {
+          video.currentTime = data.currentTime;
+          video.pause();
+          setSyncStatus("⏸ Paused (synced)");
+        } else if (data.event === "seek") {
+          video.currentTime = data.currentTime;
+          setSyncStatus(`⏩ Synced to ${Math.floor(data.currentTime)}s`);
+        }
       }
 
       setTimeout(() => {
@@ -55,7 +84,7 @@ function MobileVideoPlayer({ roomId, videoUrl, isHost }) {
     return () => {
       socket.off("video-event", handleVideoEvent);
     };
-  }, [roomId, activated]);
+  }, [roomId, isYT, activated]);
 
   // Handle user activation - must be triggered by user gesture
   const handleActivate = () => {
@@ -65,21 +94,36 @@ function MobileVideoPlayer({ roomId, videoUrl, isHost }) {
     // Apply any pending sync after activation
     if (pendingSync) {
       console.log("MobileVideoPlayer: Applying pending sync", pendingSync);
-      const player = playerRef.current?.getInternalPlayer();
-      if (player && player.seekTo) {
-        player.seekTo(pendingSync.currentTime, true);
+
+      if (isYT) {
+        const player = playerRef.current?.getInternalPlayer();
+        if (player && player.seekTo) {
+          player.seekTo(pendingSync.currentTime, true);
+        }
+        if (pendingSync.event === "play") {
+          setPlaying(true);
+        }
+      } else {
+        const video = videoRef.current;
+        if (video) {
+          video.currentTime = pendingSync.currentTime;
+          if (pendingSync.event === "play") {
+            video.play().catch(() => {});
+          }
+        }
       }
-      if (pendingSync.event === "play") {
-        setPlaying(true);
-        setSyncStatus("▶ Playing (synced)");
-      }
+
+      setSyncStatus("▶ Synced with host");
       setPendingSync(null);
     }
   };
 
   const getCurrentTime = () => {
-    if (playerRef.current) {
+    if (isYT && playerRef.current) {
       return playerRef.current.getCurrentTime() || 0;
+    }
+    if (videoRef.current) {
+      return videoRef.current.currentTime || 0;
     }
     return 0;
   };
@@ -125,13 +169,51 @@ function MobileVideoPlayer({ roomId, videoUrl, isHost }) {
     setSyncStatus(`⏩ Seeked to ${Math.floor(time)}s`);
   };
 
-  const handleError = (error) => {
-    console.log("MobileVideoPlayer error:", error);
-    // Don't crash on NotAllowedError - just wait for user gesture
-    if (error?.name === "NotAllowedError") {
-      setActivated(false);
-      setPlaying(false);
+  const renderPlayer = () => {
+    if (isYT) {
+      // YouTube uses ReactPlayer
+      return (
+        <ReactPlayer
+          ref={playerRef}
+          url={videoUrl}
+          controls={true}
+          playing={activated && playing}
+          playsInline={true}
+          width="100%"
+          height="100%"
+          onPlay={handlePlay}
+          onPause={handlePause}
+          onSeek={handleSeek}
+          config={{
+            youtube: {
+              playerVars: {
+                playsinline: 1,
+                modestbranding: 1,
+                fs: 1,
+                rel: 0,
+              },
+            },
+          }}
+        />
+      );
     }
+
+    // Native HTML5 video for direct URLs (mobile-optimized)
+    return (
+      <video
+        ref={videoRef}
+        src={videoUrl}
+        controls
+        playsInline
+        webkit-playsinline="true"
+        x5-playsinline="true"
+        preload="metadata"
+        onPlay={handlePlay}
+        onPause={handlePause}
+        onSeeked={handleSeek}
+        style={{ width: "100%", height: "100%" }}
+      />
+    );
   };
 
   return (
@@ -153,42 +235,7 @@ function MobileVideoPlayer({ roomId, videoUrl, isHost }) {
         </div>
       )}
 
-      <div className="player-wrapper">
-        <ReactPlayer
-          ref={playerRef}
-          url={videoUrl}
-          controls={true}
-          playing={activated && playing}
-          playsInline={true}
-          width="100%"
-          height="100%"
-          onPlay={handlePlay}
-          onPause={handlePause}
-          onSeek={handleSeek}
-          onError={handleError}
-          config={{
-            youtube: {
-              playerVars: {
-                playsinline: 1,
-                modestbranding: 1,
-                fs: 1,
-                rel: 0,
-              },
-            },
-            file: {
-              forceVideo: true,
-              attributes: {
-                playsInline: true,
-                "webkit-playsinline": "true",
-                "x5-playsinline": "true",
-                "x5-video-player-type": "h5",
-                "x5-video-player-fullscreen": "true",
-                preload: "metadata",
-              },
-            },
-          }}
-        />
-      </div>
+      <div className="player-wrapper">{renderPlayer()}</div>
     </div>
   );
 }
