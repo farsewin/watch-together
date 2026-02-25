@@ -39,6 +39,14 @@ const RECONNECT_GRACE = 30;
 
 // ============== Room Operations ==============
 
+// Reserve a room (from REST endpoint) - no host yet
+async function reserveRoom(roomId) {
+  const roomKey = `room:${roomId}`;
+  await redisClient.hSet(roomKey, "reserved", "true");
+  await redisClient.expire(roomKey, ROOM_TTL);
+  return { reserved: true };
+}
+
 // Create a new room with host
 async function createRoom(roomId, hostSocketId) {
   const roomKey = `room:${roomId}`;
@@ -147,6 +155,7 @@ module.exports = {
   redisPub,
   redisSub,
   connectRedis,
+  reserveRoom,
   createRoom,
   roomExists,
   getRoomUserCount,

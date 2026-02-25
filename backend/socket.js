@@ -16,10 +16,20 @@ function setupSocket(io) {
     socket.on("join-room", async (roomId) => {
       try {
         const exists = await roomExists(roomId);
-        const userCount = exists ? await getRoomUserCount(roomId) : 0;
 
-        if (!exists || userCount === 0) {
-          // First user or rejoining empty room (grace period) - create/recreate room and become host
+        // Room must be created via /create-room endpoint first
+        if (!exists) {
+          socket.emit("room-error", { message: "Room not found" });
+          console.log(
+            `User ${socket.id} tried to join non-existent room ${roomId}`,
+          );
+          return;
+        }
+
+        const userCount = await getRoomUserCount(roomId);
+
+        if (userCount === 0) {
+          // First user or rejoining empty room (grace period) - become host
           const result = await createRoom(roomId, socket.id);
           socket.join(roomId);
           socket.roomId = roomId;

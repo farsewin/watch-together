@@ -1,12 +1,14 @@
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
+const { reserveRoom } = require("../redis");
 
 const router = express.Router();
 
 // Create a new room
-router.post("/create-room", (req, res) => {
+router.post("/create-room", async (req, res) => {
   const roomId = uuidv4();
-  console.log(`Room created: ${roomId}`);
+  await reserveRoom(roomId);
+  console.log(`Room reserved: ${roomId}`);
   res.json({ roomId });
 });
 
