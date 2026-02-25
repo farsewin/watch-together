@@ -22,21 +22,21 @@ function VideoPlayer({ roomId, videoUrl }) {
       switch (data.event) {
         case "play":
           if (playerRef.current) {
-            playerRef.current.seekTo(data.currentTime, "seconds");
+            playerRef.current.currentTime = data.currentTime;
           }
           setPlaying(true);
           setSyncStatus("▶ Playing (synced)");
           break;
         case "pause":
           if (playerRef.current) {
-            playerRef.current.seekTo(data.currentTime, "seconds");
+            playerRef.current.currentTime = data.currentTime;
           }
           setPlaying(false);
           setSyncStatus("⏸ Paused (synced)");
           break;
         case "seek":
           if (playerRef.current) {
-            playerRef.current.seekTo(data.currentTime, "seconds");
+            playerRef.current.currentTime = data.currentTime;
           }
           setSyncStatus(`⏩ Synced to ${Math.floor(data.currentTime)}s`);
           break;
@@ -60,7 +60,7 @@ function VideoPlayer({ roomId, videoUrl }) {
   // Get current time from player
   const getCurrentTime = () => {
     if (playerRef.current) {
-      return playerRef.current.getCurrentTime() || 0;
+      return playerRef.current.currentTime || 0;
     }
     return 0;
   };
