@@ -17,7 +17,7 @@ function VideoPlayer({ roomId, videoUrl }) {
     // Handle incoming video events (play, pause, seek only)
     const handleVideoEvent = (data) => {
       console.log("VideoPlayer: Received video event:", data);
-      
+
       // Set remote flag before making changes
       isRemote.current = true;
       lastEvent.current = { type: data.event, time: Date.now() };
@@ -65,10 +65,13 @@ function VideoPlayer({ roomId, videoUrl }) {
   // Debounce check - prevent rapid fire events
   const shouldEmit = useCallback((eventType) => {
     if (isRemote.current) return false;
-    
+
     const now = Date.now();
     // Don't emit same event type within 500ms
-    if (lastEvent.current.type === eventType && now - lastEvent.current.time < 500) {
+    if (
+      lastEvent.current.type === eventType &&
+      now - lastEvent.current.time < 500
+    ) {
       return false;
     }
     lastEvent.current = { type: eventType, time: now };
