@@ -10,50 +10,57 @@ const DEFAULT_VIDEO = "https://www.w3schools.com/html/mov_bbb.mp4";
 function App() {
   const [roomId, setRoomId] = useState("");
   const [joinedRoom, setJoinedRoom] = useState(null);
+  const [isHost, setIsHost] = useState(false);
   const [videoUrl, setVideoUrl] = useState(DEFAULT_VIDEO);
 
-  const handleJoinRoom = (id) => {
+  const handleJoinRoom = (id, hostStatus) => {
     setJoinedRoom(id);
+    setIsHost(hostStatus);
   };
 
   // Sync video URL between users
   useEffect(() => {
     if (!joinedRoom) return;
 
-    // When receiving URL change
+    // When receiving URL change (from host)
     const handleUrlChange = (data) => {
       console.log("Received URL change:", data.url);
       setVideoUrl(data.url);
     };
 
-    // When another user requests our current URL (they just joined)
+    // When guest requests URL (only host responds)
     const handleUrlRequest = () => {
-      console.log("User requested URL, sending:", videoUrl);
-      socket.emit("url-change", { roomId: joinedRoom, url: videoUrl });
+      if (isHost) {
+        console.log("Guest requested URL, sending:", videoUrl);
+        socket.emit("url-change", { roomId: joinedRoom, url: videoUrl });
+      }
     };
 
     socket.on("url-change", handleUrlChange);
     socket.on("request-url", handleUrlRequest);
 
-    // Request current URL from other users when joining
-    socket.emit("request-url", { roomId: joinedRoom });
+    // Guest requests current URL from host when joining
+    if (!isHost) {
+      socket.emit("request-url", { roomId: joinedRoom });
+    }
 
     return () => {
       socket.off("url-change", handleUrlChange);
       socket.off("request-url", handleUrlRequest);
     };
-  }, [joinedRoom, videoUrl]);
+  }, [joinedRoom, videoUrl, isHost]);
 
-  // Handle URL input change and broadcast to other user
+  // Handle URL input change (only host can change)
   const handleUrlChange = (e) => {
+    if (!isHost) return;
     const newUrl = e.target.value;
     setVideoUrl(newUrl);
   };
 
-  // Broadcast URL when user finishes typing (on blur or Enter)
+  // Broadcast URL when host finishes typing
   const broadcastUrl = () => {
-    if (joinedRoom && videoUrl) {
-      console.log("Broadcasting URL:", videoUrl);
+    if (isHost && joinedRoom && videoUrl) {
+      console.log("Host broadcasting URL:", videoUrl);
       socket.emit("url-change", { roomId: joinedRoom, url: videoUrl });
     }
   };
@@ -64,6 +71,13 @@ function App() {
 
       {joinedRoom && (
         <div className="video-section">
+          {isHost ? (
+            <div className="role-badge host">🎬 You are the HOST</div>
+          ) : (
+            <div className="role-badge guest">
+              👁 You are a GUEST (view only)
+            </div>
+          )}
           <div className="video-url-input">
             <label>Video URL:</label>
             <input
@@ -72,10 +86,15 @@ function App() {
               onChange={handleUrlChange}
               onBlur={broadcastUrl}
               onKeyDown={(e) => e.key === "Enter" && broadcastUrl()}
-              placeholder="Enter video URL"
+              placeholder={isHost ? "Enter video URL" : "Host controls video"}
+              disabled={!isHost}
             />
           </div>
-          <VideoPlayer roomId={joinedRoom} videoUrl={videoUrl} />
+          <VideoPlayer
+            roomId={joinedRoom}
+            videoUrl={videoUrl}
+            isHost={isHost}
+          />
         </div>
       )}
     </div>

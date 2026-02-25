@@ -102,6 +102,24 @@ button:disabled {
   border-radius: 12px;
 }
 
+.role-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.role-badge.host {
+  background: linear-gradient(135deg, #e94560, #ff6b6b);
+  color: #fff;
+}
+
+.role-badge.guest {
+  background: linear-gradient(135deg, #4a90a4, #6bb9d6);
+  color: #fff;
+}
+
 .video-url-input {
   display: flex;
   gap: 0.5rem;

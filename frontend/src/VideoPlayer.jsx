@@ -7,7 +7,7 @@ const isYouTube = (url) => {
   return url && (url.includes("youtube.com") || url.includes("youtu.be"));
 };
 
-function VideoPlayer({ roomId, videoUrl }) {
+function VideoPlayer({ roomId, videoUrl, isHost }) {
   const videoRef = useRef(null);
   const playerRef = useRef(null);
   const isRemote = useRef(false);
@@ -86,11 +86,11 @@ function VideoPlayer({ roomId, videoUrl }) {
     return 0;
   };
 
-  // Handle play
+  // Handle play (only host emits)
   const handlePlay = () => {
-    if (isRemote.current) return;
+    if (isRemote.current || !isHost) return;
     const time = getCurrentTime();
-    console.log("VideoPlayer: Emitting play at", time);
+    console.log("VideoPlayer: Host emitting play at", time);
     socket.emit("video-event", {
       roomId,
       event: "play",
@@ -99,11 +99,11 @@ function VideoPlayer({ roomId, videoUrl }) {
     setSyncStatus("▶ Playing");
   };
 
-  // Handle pause
+  // Handle pause (only host emits)
   const handlePause = () => {
-    if (isRemote.current) return;
+    if (isRemote.current || !isHost) return;
     const time = getCurrentTime();
-    console.log("VideoPlayer: Emitting pause at", time);
+    console.log("VideoPlayer: Host emitting pause at", time);
     socket.emit("video-event", {
       roomId,
       event: "pause",
@@ -112,11 +112,11 @@ function VideoPlayer({ roomId, videoUrl }) {
     setSyncStatus("⏸ Paused");
   };
 
-  // Handle seek
+  // Handle seek (only host emits)
   const handleSeek = (seconds) => {
-    if (isRemote.current) return;
+    if (isRemote.current || !isHost) return;
     const time = typeof seconds === "number" ? seconds : getCurrentTime();
-    console.log("VideoPlayer: Emitting seek to", time);
+    console.log("VideoPlayer: Host emitting seek to", time);
     socket.emit("video-event", {
       roomId,
       event: "seek",

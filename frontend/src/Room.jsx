@@ -39,7 +39,7 @@ function Room({ onJoinRoom, roomId, setRoomId }) {
       setStatus(`Joined room successfully!`);
       setUserCount(data.userCount);
       setIsJoined(true);
-      onJoinRoom(data.roomId);
+      onJoinRoom(data.roomId, data.isHost);
     });
 
     socket.on("room-error", (data) => {
