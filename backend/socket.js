@@ -1,93 +1,123 @@
-// In-memory room storage - stores { users: Set, host: socketId }
-const rooms = new Map();
+const {
+  createRoom,
+  roomExists,
+  joinRoom,
+  leaveRoom,
+  isHost,
+  getRoomData,
+} = require("./redis");
 
 function setupSocket(io) {
   io.on("connection", (socket) => {
     console.log(`User connected: ${socket.id}`);
 
-    // Handle room join
-    socket.on("join-room", (roomId) => {
-      // Initialize room if it doesn't exist (first user is host)
-      if (!rooms.has(roomId)) {
-        rooms.set(roomId, { users: new Set(), host: socket.id });
+    // Handle room join (async)
+    socket.on("join-room", async (roomId) => {
+      try {
+        const exists = await roomExists(roomId);
+
+        if (!exists) {
+          // First user - create room and become host
+          const result = await createRoom(roomId, socket.id);
+          socket.join(roomId);
+          socket.roomId = roomId;
+
+          console.log(
+            `User ${socket.id} created room ${roomId} as HOST. Users: ${result.userCount}`,
+          );
+
+          socket.emit("room-joined", {
+            roomId,
+            userCount: result.userCount,
+            isHost: true,
+          });
+        } else {
+          // Room exists - try to join
+          const result = await joinRoom(roomId, socket.id);
+
+          if (result.error) {
+            socket.emit("room-error", { message: result.error });
+            console.log(
+              `User ${socket.id} rejected from room ${roomId}: ${result.error}`,
+            );
+            return;
+          }
+
+          socket.join(roomId);
+          socket.roomId = roomId;
+
+          const userIsHost = result.host === socket.id;
+
+          console.log(
+            `User ${socket.id} joined room ${roomId} as ${userIsHost ? "HOST" : "GUEST"}. Users: ${result.userCount}`,
+          );
+
+          socket.emit("room-joined", {
+            roomId,
+            userCount: result.userCount,
+            isHost: userIsHost,
+          });
+
+          // Notify other user in room
+          socket
+            .to(roomId)
+            .emit("user-joined", { userCount: result.userCount });
+        }
+      } catch (err) {
+        console.error("Error joining room:", err);
+        socket.emit("room-error", { message: "Server error" });
       }
-
-      const room = rooms.get(roomId);
-
-      // Check max 2 users per room
-      if (room.users.size >= 2) {
-        socket.emit("room-error", { message: "Room is full (max 2 users)" });
-        console.log(
-          `User ${socket.id} rejected from room ${roomId} - room full`,
-        );
-        return;
-      }
-
-      // Determine if this user is the host (first to join)
-      const isHost = room.users.size === 0;
-      if (isHost) {
-        room.host = socket.id;
-      }
-
-      // Join the room
-      room.users.add(socket.id);
-      socket.join(roomId);
-      socket.roomId = roomId;
-
-      console.log(
-        `User ${socket.id} joined room ${roomId} as ${isHost ? "HOST" : "GUEST"}. Users in room: ${room.users.size}`,
-      );
-      socket.emit("room-joined", {
-        roomId,
-        userCount: room.users.size,
-        isHost,
-      });
-
-      // Notify other user in room
-      socket.to(roomId).emit("user-joined", { userCount: room.users.size });
     });
 
     // Handle video events (play, pause, seek) - only host can send
-    socket.on("video-event", (data) => {
+    socket.on("video-event", async (data) => {
       const { roomId, event, currentTime } = data;
-      const room = rooms.get(roomId);
 
-      // Only allow host to control video
-      if (!room || room.host !== socket.id) {
-        console.log(`Guest ${socket.id} tried to send video event - ignored`);
-        return;
+      try {
+        const hostCheck = await isHost(roomId, socket.id);
+
+        if (!hostCheck) {
+          console.log(`Guest ${socket.id} tried to send video event - ignored`);
+          return;
+        }
+
+        console.log(
+          `Video event from HOST ${socket.id}: ${event} at ${currentTime}s`,
+        );
+
+        // Broadcast to other users in the room
+        socket.to(roomId).emit("video-event", {
+          event,
+          currentTime,
+          senderId: socket.id,
+        });
+      } catch (err) {
+        console.error("Error handling video event:", err);
       }
-
-      console.log(
-        `Video event from HOST ${socket.id}: ${event} at ${currentTime}s`,
-      );
-
-      // Broadcast to other users in the room
-      socket.to(roomId).emit("video-event", {
-        event,
-        currentTime,
-        senderId: socket.id,
-      });
     });
 
     // Handle URL change - only host can change
-    socket.on("url-change", (data) => {
+    socket.on("url-change", async (data) => {
       const { roomId, url } = data;
-      const room = rooms.get(roomId);
 
-      // Only allow host to change URL
-      if (!room || room.host !== socket.id) {
-        console.log(`Guest ${socket.id} tried to change URL - ignored`);
-        return;
+      try {
+        const hostCheck = await isHost(roomId, socket.id);
+
+        if (!hostCheck) {
+          console.log(`Guest ${socket.id} tried to change URL - ignored`);
+          return;
+        }
+
+        console.log(`URL change from HOST ${socket.id}: ${url}`);
+
+        // Broadcast to other users in the room
+        socket.to(roomId).emit("url-change", {
+          url,
+          senderId: socket.id,
+        });
+      } catch (err) {
+        console.error("Error handling URL change:", err);
       }
-
-      console.log(`URL change from HOST ${socket.id}: ${url}`);
-
-      // Broadcast to other users in the room
-      socket.to(roomId).emit("url-change", {
-        url,
-        senderId: socket.id,
-      });
     });
 
     // Handle URL request (guest requests URL from host)
@@ -102,43 +132,48 @@ function setupSocket(io) {
     });
 
     // Handle sync event - only host can sync
-    socket.on("sync", (data) => {
+    socket.on("sync", async (data) => {
       const { roomId, currentTime } = data;
-      const room = rooms.get(roomId);
 
-      if (!room || room.host !== socket.id) {
-        return;
+      try {
+        const hostCheck = await isHost(roomId, socket.id);
+
+        if (!hostCheck) {
+          return;
+        }
+
+        // Broadcast current time to guest
+        socket.to(roomId).emit("sync", {
+          currentTime,
+          senderId: socket.id,
+        });
+      } catch (err) {
+        console.error("Error handling sync:", err);
       }
-
-      // Broadcast current time to guest
-      socket.to(roomId).emit("sync", {
-        currentTime,
-        senderId: socket.id,
-      });
     });
 
     // Handle disconnection
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       console.log(`User disconnected: ${socket.id}`);
 
       if (socket.roomId) {
-        const room = rooms.get(socket.roomId);
-        if (room) {
-          room.users.delete(socket.id);
+        try {
+          const result = await leaveRoom(socket.roomId, socket.id);
+
           console.log(
-            `User ${socket.id} left room ${socket.roomId}. Users remaining: ${room.users.size}`,
+            `User ${socket.id} left room ${socket.roomId}. Users remaining: ${result.userCount}`,
           );
 
-          // Notify remaining users
-          socket
-            .to(socket.roomId)
-            .emit("user-left", { userCount: room.users.size });
-
-          // Clean up empty rooms
-          if (room.users.size === 0) {
-            rooms.delete(socket.roomId);
+          if (result.deleted) {
             console.log(`Room ${socket.roomId} deleted (empty)`);
+          } else {
+            // Notify remaining users
+            socket
+              .to(socket.roomId)
+              .emit("user-left", { userCount: result.userCount });
           }
+        } catch (err) {
+          console.error("Error handling disconnect:", err);
         }
       }
     });

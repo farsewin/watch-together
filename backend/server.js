@@ -2,9 +2,11 @@ require("dotenv").config();
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
+const { createAdapter } = require("@socket.io/redis-adapter");
 const cors = require("cors");
 const roomRoutes = require("./routes/room");
 const setupSocket = require("./socket");
+const { connectRedis, redisPub, redisSub } = require("./redis");
 
 // Global error handlers
 process.on("uncaughtException", (err) => {
@@ -53,10 +55,31 @@ const io = new Server(server, {
   },
 });
 
-setupSocket(io);
-
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Allowed origins: ${allowedOrigins.join(", ")}`);
-});
+
+// Initialize Redis and start server
+async function startServer() {
+  try {
+    // Connect to Redis
+    await connectRedis();
+    console.log("Redis connected successfully");
+
+    // Attach Redis adapter for horizontal scaling
+    io.adapter(createAdapter(redisPub, redisSub));
+    console.log("Socket.IO Redis adapter attached");
+
+    // Setup socket handlers
+    setupSocket(io);
+
+    // Start HTTP server
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Allowed origins: ${allowedOrigins.join(", ")}`);
+    });
+  } catch (err) {
+    console.error("Failed to start server:", err);
+    process.exit(1);
+  }
+}
+
+startServer();
