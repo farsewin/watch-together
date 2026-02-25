@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Room from "./Room";
 import VideoPlayer from "./VideoPlayer";
+import Chat from "./Chat";
 import socket from "./socket";
 import "./App.css";
 
@@ -101,6 +102,7 @@ function App() {
             videoUrl={videoUrl}
             isHost={isHost}
           />
+          <Chat roomId={joinedRoom} />
         </div>
       )}
     </div>

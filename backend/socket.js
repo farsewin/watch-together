@@ -100,13 +100,11 @@ function setupSocket(io) {
           });
 
           // Notify other users in room with updated user list
-          socket
-            .to(roomId)
-            .emit("user-joined", {
-              userCount: result.userCount,
-              users,
-              username,
-            });
+          socket.to(roomId).emit("user-joined", {
+            userCount: result.userCount,
+            users,
+            username,
+          });
         }
       } catch (err) {
         console.error("Error joining room:", err);
@@ -206,6 +204,29 @@ function setupSocket(io) {
       }
     });
 
+    // Handle chat messages
+    socket.on("chat-message", (data) => {
+      const { roomId, message } = data;
+
+      if (!socket.roomId || !message || !message.trim()) {
+        return;
+      }
+
+      const chatMessage = {
+        id: Date.now(),
+        username: socket.username || "Anonymous",
+        message: message.trim(),
+        timestamp: new Date().toISOString(),
+      };
+
+      console.log(
+        `Chat in room ${roomId}: ${chatMessage.username}: ${chatMessage.message}`,
+      );
+
+      // Send to all users in the room including sender
+      io.to(roomId).emit("chat-message", chatMessage);
+    });
+
     // Handle disconnection
     socket.on("disconnect", async () => {
       console.log(`User ${socket.username || socket.id} disconnected`);
@@ -226,13 +247,11 @@ function setupSocket(io) {
           } else {
             // Get updated user list and notify remaining users
             const users = await getRoomUsernames(socket.roomId);
-            socket
-              .to(socket.roomId)
-              .emit("user-left", {
-                userCount: result.userCount,
-                users,
-                username: socket.username,
-              });
+            socket.to(socket.roomId).emit("user-left", {
+              userCount: result.userCount,
+              users,
+              username: socket.username,
+            });
           }
         } catch (err) {
           console.error("Error handling disconnect:", err);
