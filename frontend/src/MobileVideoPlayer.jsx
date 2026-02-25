@@ -100,24 +100,36 @@ function MobileVideoPlayer({ roomId, videoUrl, isHost }) {
           url={videoUrl}
           controls={true}
           playing={playing}
-          playsinline={true}
+          playsInline={true}
+          crossOrigin="anonymous"
           width="100%"
           height="100%"
           onPlay={handlePlay}
           onPause={handlePause}
           onSeek={handleSeek}
+          onError={(e) => console.log("MobileVideoPlayer error:", e)}
           config={{
             youtube: {
               playerVars: {
                 playsinline: 1,
                 modestbranding: 1,
+                fs: 1,
+                rel: 0,
               },
             },
             file: {
+              forceVideo: true,
               attributes: {
                 playsInline: true,
                 "webkit-playsinline": "true",
+                "x5-playsinline": "true",
+                "x5-video-player-type": "h5",
+                "x5-video-player-fullscreen": "true",
                 preload: "auto",
+                crossOrigin: "anonymous",
+              },
+            },
+          }}
               },
             },
           }}
