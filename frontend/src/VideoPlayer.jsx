@@ -1,10 +1,11 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import ReactPlayer from "react-player";
 import socket from "./socket";
 
 function VideoPlayer({ roomId, videoUrl }) {
   const playerRef = useRef(null);
   const isRemote = useRef(false);
+  const lastEvent = useRef({ type: null, time: 0 });
   const [playing, setPlaying] = useState(false);
   const [syncStatus, setSyncStatus] = useState("");
 
@@ -12,42 +13,38 @@ function VideoPlayer({ roomId, videoUrl }) {
     if (!roomId) return;
 
     console.log("VideoPlayer: Setting up socket listeners for room:", roomId);
-    console.log("VideoPlayer: Socket connected?", socket.connected);
 
     // Handle incoming video events (play, pause, seek only)
     const handleVideoEvent = (data) => {
       console.log("VideoPlayer: Received video event:", data);
+      
+      // Set remote flag before making changes
       isRemote.current = true;
+      lastEvent.current = { type: data.event, time: Date.now() };
 
-      switch (data.event) {
-        case "play":
-          if (playerRef.current) {
-            playerRef.current.currentTime = data.currentTime;
-          }
-          setPlaying(true);
-          setSyncStatus("▶ Playing (synced)");
-          break;
-        case "pause":
-          if (playerRef.current) {
-            playerRef.current.currentTime = data.currentTime;
-          }
-          setPlaying(false);
-          setSyncStatus("⏸ Paused (synced)");
-          break;
-        case "seek":
-          if (playerRef.current) {
-            playerRef.current.currentTime = data.currentTime;
-          }
-          setSyncStatus(`⏩ Synced to ${Math.floor(data.currentTime)}s`);
-          break;
-        default:
-          break;
+      if (data.event === "play") {
+        if (playerRef.current) {
+          playerRef.current.currentTime = data.currentTime;
+        }
+        setPlaying(true);
+        setSyncStatus("▶ Playing (synced)");
+      } else if (data.event === "pause") {
+        if (playerRef.current) {
+          playerRef.current.currentTime = data.currentTime;
+        }
+        setPlaying(false);
+        setSyncStatus("⏸ Paused (synced)");
+      } else if (data.event === "seek") {
+        if (playerRef.current) {
+          playerRef.current.currentTime = data.currentTime;
+        }
+        setSyncStatus(`⏩ Synced to ${Math.floor(data.currentTime)}s`);
       }
 
-      // Reset flag after delay
+      // Reset flag after longer delay
       setTimeout(() => {
         isRemote.current = false;
-      }, 500);
+      }, 1000);
     };
 
     socket.on("video-event", handleVideoEvent);
@@ -65,9 +62,22 @@ function VideoPlayer({ roomId, videoUrl }) {
     return 0;
   };
 
+  // Debounce check - prevent rapid fire events
+  const shouldEmit = useCallback((eventType) => {
+    if (isRemote.current) return false;
+    
+    const now = Date.now();
+    // Don't emit same event type within 500ms
+    if (lastEvent.current.type === eventType && now - lastEvent.current.time < 500) {
+      return false;
+    }
+    lastEvent.current = { type: eventType, time: now };
+    return true;
+  }, []);
+
   // Emit play event
   const handlePlay = () => {
-    if (isRemote.current) return;
+    if (!shouldEmit("play")) return;
     const time = getCurrentTime();
     console.log("VideoPlayer: Emitting play event at", time);
     socket.emit("video-event", {
@@ -80,7 +90,7 @@ function VideoPlayer({ roomId, videoUrl }) {
 
   // Emit pause event
   const handlePause = () => {
-    if (isRemote.current) return;
+    if (!shouldEmit("pause")) return;
     const time = getCurrentTime();
     console.log("VideoPlayer: Emitting pause event at", time);
     socket.emit("video-event", {
@@ -93,7 +103,7 @@ function VideoPlayer({ roomId, videoUrl }) {
 
   // Emit seek event
   const handleSeek = (seconds) => {
-    if (isRemote.current) return;
+    if (!shouldEmit("seek")) return;
     console.log("VideoPlayer: Emitting seek event to", seconds);
     socket.emit("video-event", {
       roomId,
