@@ -34,6 +34,9 @@ async function connectRedis() {
 // Room TTL in seconds (24 hours)
 const ROOM_TTL = 86400;
 
+// Grace period for reconnection (30 seconds)
+const RECONNECT_GRACE = 30;
+
 // ============== Room Operations ==============
 
 // Create a new room with host
@@ -101,10 +104,12 @@ async function leaveRoom(roomId, socketId) {
 
   const userCount = await getRoomUserCount(roomId);
 
-  // If room is empty, delete it
+  // If room is empty, set short TTL instead of deleting immediately
+  // This allows users to rejoin after refresh
   if (userCount === 0) {
-    await redisClient.del(roomKey, usersKey);
-    return { deleted: true, userCount: 0 };
+    await redisClient.expire(roomKey, RECONNECT_GRACE);
+    await redisClient.expire(usersKey, RECONNECT_GRACE);
+    return { deleted: false, userCount: 0, pendingDelete: true };
   }
 
   // If host left, assign new host

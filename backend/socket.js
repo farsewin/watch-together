@@ -5,6 +5,7 @@ const {
   leaveRoom,
   isHost,
   getRoomData,
+  getRoomUserCount,
 } = require("./redis");
 
 function setupSocket(io) {
@@ -15,9 +16,10 @@ function setupSocket(io) {
     socket.on("join-room", async (roomId) => {
       try {
         const exists = await roomExists(roomId);
+        const userCount = exists ? await getRoomUserCount(roomId) : 0;
 
-        if (!exists) {
-          // First user - create room and become host
+        if (!exists || userCount === 0) {
+          // First user or rejoining empty room (grace period) - create/recreate room and become host
           const result = await createRoom(roomId, socket.id);
           socket.join(roomId);
           socket.roomId = roomId;
@@ -32,7 +34,7 @@ function setupSocket(io) {
             isHost: true,
           });
         } else {
-          // Room exists - try to join
+          // Room exists with users - try to join
           const result = await joinRoom(roomId, socket.id);
 
           if (result.error) {
