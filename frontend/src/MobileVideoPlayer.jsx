@@ -183,8 +183,9 @@ function MobileVideoPlayer({ roomId, videoUrl, isHost, initialState }) {
       // YouTube uses ReactPlayer
       return (
         <ReactPlayer
+          key={videoUrl}
           ref={playerRef}
-          url={videoUrl}
+          src={videoUrl}
           controls={true}
           playing={activated && playing}
           playsInline={true}

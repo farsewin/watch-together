@@ -175,7 +175,7 @@ function PCVideoPlayer({ roomId, videoUrl, isHost, initialState }) {
         <ReactPlayer
           key={videoUrl}
           ref={playerRef}
-          url={videoUrl}
+          src={videoUrl}
           controls={true}
           playing={playing}
           width="100%"
