@@ -158,6 +158,7 @@ function PCVideoPlayer({ roomId, videoUrl, isHost, initialState }) {
     if (isYT) {
       return (
         <ReactPlayer
+          key={videoUrl}
           ref={playerRef}
           url={videoUrl}
           controls={true}
@@ -169,6 +170,7 @@ function PCVideoPlayer({ roomId, videoUrl, isHost, initialState }) {
           onSeek={handleSeek}
           onReady={() => console.log("ReactPlayer ready for:", videoUrl)}
           onError={(e) => console.error("ReactPlayer error:", e)}
+          onBuffer={() => console.log("ReactPlayer buffering...")}
           config={{
             youtube: {
               playerVars: {
