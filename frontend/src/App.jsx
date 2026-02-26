@@ -77,31 +77,33 @@ function App() {
       <Room onJoinRoom={handleJoinRoom} roomId={roomId} setRoomId={setRoomId} />
 
       {joinedRoom && (
-        <div className="video-section">
-          {isHost ? (
-            <div className="role-badge host">🎬 You are the HOST</div>
-          ) : (
-            <div className="role-badge guest">
-              👁 You are a GUEST (view only)
+        <div className="room-layout">
+          <div className="video-section">
+            {isHost ? (
+              <div className="role-badge host">🎬 You are the HOST</div>
+            ) : (
+              <div className="role-badge guest">
+                👁 You are a GUEST (view only)
+              </div>
+            )}
+            <div className="video-url-input">
+              <label>Video URL:</label>
+              <input
+                type="text"
+                value={videoUrl}
+                onChange={handleUrlChange}
+                onBlur={broadcastUrl}
+                onKeyDown={(e) => e.key === "Enter" && broadcastUrl()}
+                placeholder={isHost ? "Enter video URL" : "Host controls video"}
+                disabled={!isHost}
+              />
             </div>
-          )}
-          <div className="video-url-input">
-            <label>Video URL:</label>
-            <input
-              type="text"
-              value={videoUrl}
-              onChange={handleUrlChange}
-              onBlur={broadcastUrl}
-              onKeyDown={(e) => e.key === "Enter" && broadcastUrl()}
-              placeholder={isHost ? "Enter video URL" : "Host controls video"}
-              disabled={!isHost}
+            <VideoPlayer
+              roomId={joinedRoom}
+              videoUrl={videoUrl}
+              isHost={isHost}
             />
           </div>
-          <VideoPlayer
-            roomId={joinedRoom}
-            videoUrl={videoUrl}
-            isHost={isHost}
-          />
           <Chat roomId={joinedRoom} />
         </div>
       )}

@@ -12,9 +12,16 @@ body {
 }
 
 .app {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 2rem;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+/* Room Layout - Side by Side */
+.room-layout {
+  display: flex;
+  gap: 1rem;
+  height: calc(100vh - 200px);
+  min-height: 500px;
 }
 
 /* Room Container */
@@ -97,9 +104,13 @@ button:disabled {
 
 /* Video Section */
 .video-section {
+  flex: 2;
   background: #16213e;
   padding: 1.5rem;
   border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .role-badge {
@@ -144,9 +155,11 @@ button:disabled {
 
 /* Video Container */
 .video-container {
+  flex: 1;
   border-radius: 8px;
   overflow: hidden;
   position: relative;
+  min-height: 0;
 }
 
 .video-container video {
@@ -300,12 +313,14 @@ button:disabled {
 
 /* Chat */
 .chat-container {
+  flex: 1;
+  min-width: 300px;
+  max-width: 400px;
   background: #16213e;
   border-radius: 12px;
-  margin-top: 1rem;
   display: flex;
   flex-direction: column;
-  height: 300px;
+  height: 100%;
 }
 
 .chat-header {
@@ -360,5 +375,23 @@ button:disabled {
 
 .chat-input button {
   padding: 0.5rem 1rem;
+}
+
+/* Responsive - Stack on mobile */
+@media (max-width: 768px) {
+  .room-layout {
+    flex-direction: column;
+    height: auto;
+    min-height: auto;
+  }
+
+  .video-section {
+    min-height: 400px;
+  }
+
+  .chat-container {
+    max-width: none;
+    height: 350px;
+  }
 }
 
