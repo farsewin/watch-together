@@ -3,6 +3,7 @@ const {
   roomExists,
   joinRoom,
   leaveRoom,
+  deleteRoom,
   isHost,
   getRoomData,
   getRoomUserCount,
@@ -225,6 +226,59 @@ function setupSocket(io) {
 
       // Send to all users in the room including sender
       io.to(roomId).emit("chat-message", chatMessage);
+    });
+
+    // Handle explicit leave room (user clicks Leave button)
+    socket.on("leave-room", async (data) => {
+      const { roomId } = data;
+
+      if (!roomId) return;
+
+      try {
+        const hostCheck = await isHost(roomId, socket.id);
+
+        console.log(
+          `User ${socket.username || socket.id} leaving room ${roomId}. Is host: ${hostCheck}`,
+        );
+
+        if (hostCheck) {
+          // Host is leaving - destroy the room completely
+          console.log(`Host leaving - destroying room ${roomId}`);
+
+          // Notify all users in the room that it's closing
+          io.to(roomId).emit("room-closed", {
+            message: "Host closed the room",
+          });
+
+          // Remove username before deleting room
+          await removeUsername(roomId, socket.id);
+
+          // Delete room completely from Redis
+          await deleteRoom(roomId);
+
+          // Leave the socket room
+          socket.leave(roomId);
+          socket.roomId = null;
+        } else {
+          // Guest is leaving - just remove them normally
+          await removeUsername(roomId, socket.id);
+          await leaveRoom(roomId, socket.id);
+
+          const users = await getRoomUsernames(roomId);
+          const userCount = Object.keys(users).length;
+
+          socket.to(roomId).emit("user-left", {
+            userCount,
+            users,
+            username: socket.username,
+          });
+
+          socket.leave(roomId);
+          socket.roomId = null;
+        }
+      } catch (err) {
+        console.error("Error handling leave-room:", err);
+      }
     });
 
     // Handle disconnection

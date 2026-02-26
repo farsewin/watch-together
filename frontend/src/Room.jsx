@@ -16,6 +16,10 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
 
   // Leave room and destroy session
   const leaveRoom = () => {
+    // Emit leave-room event before disconnecting so backend can clean up
+    if (socket.connected) {
+      socket.emit("leave-room", { roomId });
+    }
     socket.disconnect();
     clearSession();
     setIsJoined(false);
@@ -110,6 +114,17 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
       setUserCount(data.userCount);
       setUsers(data.users || {});
       setStatus(`${data.username || "User"} left the room`);
+    });
+
+    socket.on("room-closed", (data) => {
+      console.log("Room closed by host:", data.message);
+      clearSession();
+      setIsJoined(false);
+      setStatus("Room was closed by the host");
+      setUserCount(0);
+      setUsers({});
+      socket.disconnect();
+      onLeaveRoom();
     });
 
     socket.emit("join-room", { roomId, username });

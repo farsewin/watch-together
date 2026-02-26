@@ -132,6 +132,18 @@ async function leaveRoom(roomId, socketId) {
   return { deleted: false, userCount };
 }
 
+// Completely delete a room and all related data
+async function deleteRoom(roomId) {
+  const roomKey = `room:${roomId}`;
+  const usersKey = `room:${roomId}:users`;
+  const videoKey = `room:${roomId}:video`;
+  const namesKey = `room:${roomId}:names`;
+
+  await redisClient.del(roomKey, usersKey, videoKey, namesKey);
+  console.log(`Room ${roomId} completely deleted from Redis`);
+  return { deleted: true };
+}
+
 // Check if socket is the host
 async function isHost(roomId, socketId) {
   const roomKey = `room:${roomId}`;
@@ -233,6 +245,7 @@ module.exports = {
   getRoomUserCount,
   joinRoom,
   leaveRoom,
+  deleteRoom,
   isHost,
   getRoomData,
   saveVideoState,
