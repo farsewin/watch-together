@@ -193,6 +193,8 @@ function MobileVideoPlayer({ roomId, videoUrl, isHost, initialState }) {
           onPlay={handlePlay}
           onPause={handlePause}
           onSeek={handleSeek}
+          onReady={() => console.log("Mobile ReactPlayer ready for:", videoUrl)}
+          onError={(e) => console.error("Mobile ReactPlayer error:", e)}
           config={{
             youtube: {
               playerVars: {
@@ -200,6 +202,7 @@ function MobileVideoPlayer({ roomId, videoUrl, isHost, initialState }) {
                 modestbranding: 1,
                 fs: 1,
                 rel: 0,
+                origin: window.location.origin,
               },
             },
           }}

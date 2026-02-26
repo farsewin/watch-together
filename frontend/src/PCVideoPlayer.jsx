@@ -167,10 +167,13 @@ function PCVideoPlayer({ roomId, videoUrl, isHost, initialState }) {
           onPlay={handlePlay}
           onPause={handlePause}
           onSeek={handleSeek}
+          onReady={() => console.log("ReactPlayer ready for:", videoUrl)}
+          onError={(e) => console.error("ReactPlayer error:", e)}
           config={{
             youtube: {
               playerVars: {
                 playsinline: 1,
+                origin: window.location.origin,
               },
             },
           }}
