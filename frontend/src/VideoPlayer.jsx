@@ -9,16 +9,28 @@ const isMobile = () => {
   );
 };
 
-function VideoPlayer({ roomId, videoUrl, isHost }) {
+function VideoPlayer({ roomId, videoUrl, isHost, initialState }) {
   const [mobile] = useState(isMobile());
 
   if (mobile) {
     return (
-      <MobileVideoPlayer roomId={roomId} videoUrl={videoUrl} isHost={isHost} />
+      <MobileVideoPlayer
+        roomId={roomId}
+        videoUrl={videoUrl}
+        isHost={isHost}
+        initialState={initialState}
+      />
     );
   }
 
-  return <PCVideoPlayer roomId={roomId} videoUrl={videoUrl} isHost={isHost} />;
+  return (
+    <PCVideoPlayer
+      roomId={roomId}
+      videoUrl={videoUrl}
+      isHost={isHost}
+      initialState={initialState}
+    />
+  );
 }
 
 export default VideoPlayer;

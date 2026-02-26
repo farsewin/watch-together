@@ -13,15 +13,22 @@ function App() {
   const [joinedRoom, setJoinedRoom] = useState(null);
   const [isHost, setIsHost] = useState(false);
   const [videoUrl, setVideoUrl] = useState(DEFAULT_VIDEO);
+  const [initialState, setInitialState] = useState(null);
 
   const handleJoinRoom = (id, hostStatus, videoState) => {
     setJoinedRoom(id);
     setIsHost(hostStatus);
 
     // Restore video state from Redis on reconnect
-    if (videoState && videoState.url) {
+    if (videoState) {
       console.log("Restoring video state:", videoState);
-      setVideoUrl(videoState.url);
+      if (videoState.url) {
+        setVideoUrl(videoState.url);
+      }
+      setInitialState({
+        currentTime: videoState.currentTime || 0,
+        playing: videoState.playing || false,
+      });
     }
   };
 
@@ -114,6 +121,7 @@ function App() {
               roomId={joinedRoom}
               videoUrl={videoUrl}
               isHost={isHost}
+              initialState={initialState}
             />
           </div>
           <Chat roomId={joinedRoom} />

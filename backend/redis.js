@@ -155,11 +155,26 @@ async function getRoomData(roomId) {
 // Save video state (URL, currentTime, playing)
 async function saveVideoState(roomId, state) {
   const stateKey = `room:${roomId}:video`;
-  await redisClient.hSet(stateKey, {
-    url: state.url || "",
-    currentTime: String(state.currentTime || 0),
-    playing: state.playing ? "1" : "0",
-  });
+
+  // Get existing state to merge
+  const existing = await redisClient.hGetAll(stateKey);
+
+  const newState = {
+    url: state.url !== undefined ? state.url : existing.url || "",
+    currentTime: String(
+      state.currentTime !== undefined
+        ? state.currentTime
+        : existing.currentTime || 0,
+    ),
+    playing:
+      state.playing !== undefined
+        ? state.playing
+          ? "1"
+          : "0"
+        : existing.playing || "0",
+  };
+
+  await redisClient.hSet(stateKey, newState);
   await redisClient.expire(stateKey, ROOM_TTL);
 }
 

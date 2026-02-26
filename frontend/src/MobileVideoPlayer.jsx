@@ -7,14 +7,23 @@ const isYouTube = (url) => {
   return url && (url.includes("youtube.com") || url.includes("youtu.be"));
 };
 
-function MobileVideoPlayer({ roomId, videoUrl, isHost }) {
+function MobileVideoPlayer({ roomId, videoUrl, isHost, initialState }) {
   const videoRef = useRef(null);
   const playerRef = useRef(null);
   const isRemote = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [syncStatus, setSyncStatus] = useState("");
   const [activated, setActivated] = useState(false);
-  const [pendingSync, setPendingSync] = useState(null);
+  // Initialize pendingSync from initialState if provided
+  const [pendingSync, setPendingSync] = useState(() => {
+    if (initialState) {
+      return {
+        event: initialState.playing ? "play" : "pause",
+        currentTime: initialState.currentTime,
+      };
+    }
+    return null;
+  });
 
   const isYT = isYouTube(videoUrl);
 

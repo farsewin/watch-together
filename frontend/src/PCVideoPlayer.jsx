@@ -7,14 +7,51 @@ const isYouTube = (url) => {
   return url && (url.includes("youtube.com") || url.includes("youtu.be"));
 };
 
-function PCVideoPlayer({ roomId, videoUrl, isHost }) {
+function PCVideoPlayer({ roomId, videoUrl, isHost, initialState }) {
   const videoRef = useRef(null);
   const playerRef = useRef(null);
   const isRemote = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [syncStatus, setSyncStatus] = useState("");
+  const appliedInitial = useRef(false);
 
   const isYT = isYouTube(videoUrl);
+
+  // Apply initial state on mount (for reconnection)
+  useEffect(() => {
+    if (!initialState || appliedInitial.current) return;
+
+    console.log("PCVideoPlayer: Applying initial state", initialState);
+    appliedInitial.current = true;
+    isRemote.current = true;
+
+    const applyState = () => {
+      if (isYT) {
+        const player = playerRef.current?.getInternalPlayer();
+        if (player && player.seekTo) {
+          player.seekTo(initialState.currentTime, true);
+          if (initialState.playing) {
+            setPlaying(true);
+          }
+        }
+      } else {
+        const video = videoRef.current;
+        if (video) {
+          video.currentTime = initialState.currentTime;
+          if (initialState.playing) {
+            video.play().catch(() => {});
+          }
+        }
+      }
+      setSyncStatus(`⏩ Restored to ${Math.floor(initialState.currentTime)}s`);
+      setTimeout(() => {
+        isRemote.current = false;
+      }, 500);
+    };
+
+    // Delay to ensure player is ready
+    setTimeout(applyState, 500);
+  }, [initialState, isYT]);
 
   useEffect(() => {
     if (!roomId) return;
