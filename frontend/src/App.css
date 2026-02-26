@@ -137,6 +137,22 @@ button:disabled {
   background: #0f3460;
 }
 
+.leave-btn {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  margin-left: auto;
+  transition: background 0.2s;
+}
+
+.leave-btn:hover {
+  background: #c0392b;
+}
+
 .users-inline {
   display: flex;
   align-items: center;

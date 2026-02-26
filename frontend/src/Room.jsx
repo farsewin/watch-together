@@ -6,13 +6,24 @@ const API_URL =
   import.meta.env.VITE_BACKEND_URL ||
   "https://watch-together-production-7fd9.up.railway.app";
 
-function Room({ onJoinRoom, roomId, setRoomId }) {
+function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
   const [status, setStatus] = useState("");
   const [userCount, setUserCount] = useState(0);
   const [isJoined, setIsJoined] = useState(false);
   const [username, setUsername] = useState("");
   const [users, setUsers] = useState({});
   const [copied, setCopied] = useState(false);
+
+  // Leave room and destroy session
+  const leaveRoom = () => {
+    socket.disconnect();
+    clearSession();
+    setIsJoined(false);
+    setStatus("");
+    setUserCount(0);
+    setUsers({});
+    onLeaveRoom();
+  };
 
   // Auto-restore session on mount
   useEffect(() => {
@@ -164,6 +175,9 @@ function Room({ onJoinRoom, roomId, setRoomId }) {
             ))}
           </span>
           {status && <span className="status-inline">{status}</span>}
+          <button className="leave-btn" onClick={leaveRoom}>
+            Leave Room
+          </button>
         </div>
       )}
     </div>

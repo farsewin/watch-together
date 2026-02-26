@@ -25,6 +25,13 @@ function App() {
     }
   };
 
+  const handleLeaveRoom = () => {
+    setJoinedRoom(null);
+    setIsHost(false);
+    setVideoUrl(DEFAULT_VIDEO);
+    setRoomId("");
+  };
+
   // Sync video URL between users
   useEffect(() => {
     if (!joinedRoom) return;
@@ -74,7 +81,12 @@ function App() {
 
   return (
     <div className="app">
-      <Room onJoinRoom={handleJoinRoom} roomId={roomId} setRoomId={setRoomId} />
+      <Room
+        onJoinRoom={handleJoinRoom}
+        onLeaveRoom={handleLeaveRoom}
+        roomId={roomId}
+        setRoomId={setRoomId}
+      />
 
       {joinedRoom && (
         <div className="room-layout">
