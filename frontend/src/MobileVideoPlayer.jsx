@@ -48,10 +48,10 @@ function MobileVideoPlayer({ roomId, videoUrl, isHost, initialState }) {
       isRemote.current = true;
 
       if (isYT) {
-        // YouTube via ReactPlayer
-        const player = playerRef.current?.getInternalPlayer();
-        if (player && player.seekTo) {
-          player.seekTo(data.currentTime, true);
+        // YouTube via ReactPlayer - use ref.currentTime
+        const player = playerRef.current;
+        if (player) {
+          player.currentTime = data.currentTime;
         }
         if (data.event === "play") {
           setPlaying(true);
@@ -105,9 +105,9 @@ function MobileVideoPlayer({ roomId, videoUrl, isHost, initialState }) {
       console.log("MobileVideoPlayer: Applying pending sync", pendingSync);
 
       if (isYT) {
-        const player = playerRef.current?.getInternalPlayer();
-        if (player && player.seekTo) {
-          player.seekTo(pendingSync.currentTime, true);
+        const player = playerRef.current;
+        if (player) {
+          player.currentTime = pendingSync.currentTime;
         }
         if (pendingSync.event === "play") {
           setPlaying(true);
@@ -129,7 +129,7 @@ function MobileVideoPlayer({ roomId, videoUrl, isHost, initialState }) {
 
   const getCurrentTime = () => {
     if (isYT && playerRef.current) {
-      return playerRef.current.getCurrentTime() || 0;
+      return playerRef.current.currentTime || 0;
     }
     if (videoRef.current) {
       return videoRef.current.currentTime || 0;

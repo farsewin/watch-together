@@ -53,9 +53,9 @@ function PCVideoPlayer({ roomId, videoUrl, isHost, initialState }) {
       appliedInitial.current = true;
       isRemote.current = true;
 
-      const player = playerRef.current?.getInternalPlayer();
-      if (player && player.seekTo) {
-        player.seekTo(state.currentTime, true);
+      const player = playerRef.current;
+      if (player) {
+        player.currentTime = state.currentTime;
         if (state.playing) {
           setPlaying(true);
         }
@@ -78,10 +78,10 @@ function PCVideoPlayer({ roomId, videoUrl, isHost, initialState }) {
       isRemote.current = true;
 
       if (isYT) {
-        // YouTube via ReactPlayer
-        const player = playerRef.current?.getInternalPlayer();
-        if (player && player.seekTo) {
-          player.seekTo(data.currentTime, true);
+        // YouTube via ReactPlayer - use ref.currentTime property
+        const player = playerRef.current;
+        if (player) {
+          player.currentTime = data.currentTime;
         }
         if (data.event === "play") {
           setPlaying(true);
@@ -125,7 +125,7 @@ function PCVideoPlayer({ roomId, videoUrl, isHost, initialState }) {
 
   const getCurrentTime = () => {
     if (isYT && playerRef.current) {
-      return playerRef.current.getCurrentTime() || 0;
+      return playerRef.current.currentTime || 0;
     }
     if (videoRef.current) {
       return videoRef.current.currentTime || 0;
