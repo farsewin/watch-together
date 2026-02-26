@@ -1,5 +1,5 @@
-import { useState } from "react";
-import socket from "./socket";
+import { useState, useEffect } from "react";
+import socket, { saveSession, getSession, clearSession } from "./socket";
 
 // Use environment variable or fallback to production URL
 const API_URL =
@@ -13,6 +13,32 @@ function Room({ onJoinRoom, roomId, setRoomId }) {
   const [username, setUsername] = useState("");
   const [users, setUsers] = useState({});
   const [copied, setCopied] = useState(false);
+
+  // Auto-restore session on mount
+  useEffect(() => {
+    const session = getSession();
+    if (session) {
+      setUsername(session.username);
+      setRoomId(session.roomId);
+    }
+  }, []);
+
+  // Handle reconnection - auto rejoin room
+  useEffect(() => {
+    const handleReconnect = () => {
+      const session = getSession();
+      if (session && session.roomId) {
+        console.log("Reconnected, rejoining room...");
+        socket.emit("join-room", {
+          roomId: session.roomId,
+          username: session.username,
+        });
+      }
+    };
+
+    socket.on("reconnect", handleReconnect);
+    return () => socket.off("reconnect", handleReconnect);
+  }, []);
 
   // Copy room ID to clipboard
   const copyRoomId = () => {
@@ -55,6 +81,7 @@ function Room({ onJoinRoom, roomId, setRoomId }) {
       setUserCount(data.userCount);
       setUsers(data.users || {});
       setIsJoined(true);
+      saveSession(data.roomId, username, data.isHost);
       onJoinRoom(data.roomId, data.isHost, data.videoState);
     });
 
