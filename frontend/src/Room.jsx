@@ -12,6 +12,14 @@ function Room({ onJoinRoom, roomId, setRoomId }) {
   const [isJoined, setIsJoined] = useState(false);
   const [username, setUsername] = useState("");
   const [users, setUsers] = useState({});
+  const [copied, setCopied] = useState(false);
+
+  // Copy room ID to clipboard
+  const copyRoomId = () => {
+    navigator.clipboard.writeText(roomId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   // Create a new room
   const createRoom = async () => {
@@ -110,7 +118,16 @@ function Room({ onJoinRoom, roomId, setRoomId }) {
 
       {isJoined && (
         <div className="room-info-compact">
-          <span className="room-id-label">Room: {roomId.slice(0, 8)}...</span>
+          <span className="room-id-label">
+            Room: {roomId.slice(0, 8)}...
+            <button
+              className="copy-btn"
+              onClick={copyRoomId}
+              title="Copy Room ID"
+            >
+              {copied ? "✓" : "📋"}
+            </button>
+          </span>
           <span className="users-inline">
             <strong>Online ({userCount}):</strong>
             {Object.values(users).map((name, index) => (
