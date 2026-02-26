@@ -70,48 +70,56 @@ function Room({ onJoinRoom, roomId, setRoomId }) {
   };
 
   return (
-    <div className="room-container">
-      <h2>Watch Together</h2>
+    <div className={`room-container ${isJoined ? "room-joined" : ""}`}>
+      {!isJoined && <h2>Watch Together</h2>}
 
-      <div className="room-actions">
-        <button onClick={createRoom} disabled={isJoined}>
-          Create Room
-        </button>
-      </div>
+      {!isJoined && (
+        <>
+          <div className="room-actions">
+            <button onClick={createRoom} disabled={isJoined}>
+              Create Room
+            </button>
+          </div>
 
-      <div className="room-join">
-        <input
-          type="text"
-          placeholder="Your Name"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          disabled={isJoined}
-        />
-        <input
-          type="text"
-          placeholder="Enter Room ID"
-          value={roomId}
-          onChange={(e) => setRoomId(e.target.value)}
-          disabled={isJoined}
-        />
-        <button onClick={joinRoom} disabled={isJoined || !roomId || !username}>
-          Join Room
-        </button>
-      </div>
+          <div className="room-join">
+            <input
+              type="text"
+              placeholder="Your Name"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              disabled={isJoined}
+            />
+            <input
+              type="text"
+              placeholder="Enter Room ID"
+              value={roomId}
+              onChange={(e) => setRoomId(e.target.value)}
+              disabled={isJoined}
+            />
+            <button
+              onClick={joinRoom}
+              disabled={isJoined || !roomId || !username}
+            >
+              Join Room
+            </button>
+          </div>
 
-      {status && <p className="status">{status}</p>}
+          {status && <p className="status">{status}</p>}
+        </>
+      )}
 
       {isJoined && (
-        <div className="room-info">
-          <p className="user-count">Users in room: {userCount}</p>
-          <div className="users-list">
-            <strong>Online:</strong>
-            <ul>
-              {Object.values(users).map((name, index) => (
-                <li key={index}>{name}</li>
-              ))}
-            </ul>
-          </div>
+        <div className="room-info-compact">
+          <span className="room-id-label">Room: {roomId.slice(0, 8)}...</span>
+          <span className="users-inline">
+            <strong>Online ({userCount}):</strong>
+            {Object.values(users).map((name, index) => (
+              <span key={index} className="user-tag">
+                {name}
+              </span>
+            ))}
+          </span>
+          {status && <span className="status-inline">{status}</span>}
         </div>
       )}
     </div>
