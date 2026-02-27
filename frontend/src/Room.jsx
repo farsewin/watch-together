@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import socket, { saveSession, getSession, clearSession } from "./socket";
+import VoiceCall from "./VoiceCall";
 
 // Use environment variable or fallback to production URL
 const API_URL =
@@ -186,6 +187,9 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
             {Object.values(users).map((name, index) => (
               <span key={index} className="user-tag">
                 {name}
+                {name === username && (
+                  <VoiceCall roomId={roomId} username={username} />
+                )}
               </span>
             ))}
           </span>

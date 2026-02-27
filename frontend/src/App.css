@@ -171,6 +171,19 @@ button:disabled {
   border-radius: 12px;
   font-size: 0.8rem;
   color: #eaeaea;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.user-tag .voice-call-loading,
+.user-tag .voice-call-error {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  border: none;
+  font-size: 0.7rem;
+  color: #aaa;
 }
 
 .status-inline {
@@ -477,3 +490,88 @@ button:disabled {
   }
 }
 
+/* Voice Call Styles */
+.voice-call-container {
+  background: #0f3460;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.voice-call-container h4 {
+  margin-bottom: 0.5rem;
+  color: #4ecca3;
+}
+.voice-call-loading, .voice-call-error {
+  background: #0f3460;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 1rem;
+  color: #eaeaea;
+}
+.voice-call-error {
+  border: 1px solid #e74c3c;
+}
+
+/* Custom LiveKit Control Bar Overrides to match User Target Image */
+.custom-livekit-control {
+  display: flex !important;
+  gap: 0 !important;
+  align-items: center !important;
+  background-color: transparent !important;
+  padding: 0 !important;
+}
+
+.custom-livekit-control .lk-button-group {
+  display: flex !important;
+  align-items: center !important;
+  background-color: transparent !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  height: 20px !important;
+  border: none !important;
+}
+
+.custom-livekit-control .lk-button {
+  background-color: transparent !important;
+  color: #eaeaea !important;
+  border: none !important;
+  padding: 0 10px !important;
+  font-size: 0 !important; /* Hide text, keep icon */
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0 !important; /* Remove gap since text is gone */
+  cursor: pointer !important;
+  font-family: inherit !important;
+}
+
+/* Specifically hide the span containing the button text */
+.custom-livekit-control .lk-button > span {
+  display: none !important;
+}
+
+.custom-livekit-control .lk-button svg {
+  width: 16px !important;
+  height: 16px !important;
+  font-size: initial !important; /* Restore icon size */
+}
+
+.custom-livekit-control .lk-button:hover {
+  background-color: #16213e !important; /* Lighter blue hover */
+}
+
+.custom-livekit-control .lk-button[aria-pressed="true"] {
+  background-color: #0f3460 !important;
+  color: #e94560 !important; /* Theme red for muted state */
+}
+
+.custom-livekit-control .lk-button-group-menu {
+  border-left: 1px solid #0f3460 !important;
+  padding: 0 6px !important;
+  color: #eaeaea !important;
+}
