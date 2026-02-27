@@ -32,12 +32,16 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
 
   // Auto-restore session on mount
   useEffect(() => {
+    let active = true;
     const session = getSession();
-    if (session) {
-      setUsername(session.username);
-      setRoomId(session.roomId);
+    if (session && active) {
+      setTimeout(() => {
+        setUsername(session.username);
+        setRoomId(session.roomId);
+      }, 0);
     }
-  }, []);
+    return () => { active = false; };
+  }, [setRoomId]);
 
   // Handle reconnection - auto rejoin room
   useEffect(() => {
