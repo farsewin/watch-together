@@ -40,10 +40,16 @@ const RECONNECT_GRACE = 30;
 // ============== Room Operations ==============
 
 // Reserve a room (from REST endpoint) - no host yet
-async function reserveRoom(roomId) {
+async function reserveRoom(roomId, roomName = "New Room", isPersistent = false) {
   const roomKey = `room:${roomId}`;
-  await redisClient.hSet(roomKey, "reserved", "true");
-  await redisClient.expire(roomKey, ROOM_TTL);
+  await redisClient.hSet(roomKey, {
+    reserved: "true",
+    name: roomName,
+    persistent: isPersistent ? "true" : "false",
+  });
+  if (!isPersistent) {
+    await redisClient.expire(roomKey, ROOM_TTL);
+  }
   return { reserved: true };
 }
 
@@ -112,12 +118,17 @@ async function leaveRoom(roomId, socketId) {
 
   const userCount = await getRoomUserCount(roomId);
 
-  // If room is empty, set short TTL instead of deleting immediately
+  // Check if room is persistent
+  const isPersistent = (await redisClient.hGet(roomKey, "persistent")) === "true";
+
+  // If room is empty, set short TTL instead of deleting immediately (unless persistent)
   // This allows users to rejoin after refresh
   if (userCount === 0) {
-    await redisClient.expire(roomKey, RECONNECT_GRACE);
-    await redisClient.expire(usersKey, RECONNECT_GRACE);
-    return { deleted: false, userCount: 0, pendingDelete: true };
+    if (!isPersistent) {
+      await redisClient.expire(roomKey, RECONNECT_GRACE);
+      await redisClient.expire(usersKey, RECONNECT_GRACE);
+    }
+    return { deleted: false, userCount: 0, pendingDelete: !isPersistent };
   }
 
   // If host left, assign new host
@@ -234,6 +245,34 @@ async function getUsername(roomId, socketId) {
   return await redisClient.hGet(namesKey, socketId);
 }
 
+// Get all active rooms
+async function getAllRooms() {
+  const rooms = [];
+  const keys = await redisClient.keys("room:*");
+
+  for (const key of keys) {
+    // Filter out sub-keys like :users, :video, :names
+    if (key.includes(":users") || key.includes(":video") || key.includes(":names")) {
+      continue;
+    }
+
+    const roomId = key.split(":")[1];
+    const name = await redisClient.hGet(key, "name");
+    const persistent = await redisClient.hGet(key, "persistent");
+    const usersKey = `room:${roomId}:users`;
+    const userCount = await redisClient.sCard(usersKey);
+
+    rooms.push({
+      roomId,
+      name: name || "Unnamed Room",
+      persistent: persistent === "true",
+      userCount: userCount || 0,
+    });
+  }
+
+  return rooms;
+}
+
 module.exports = {
   redisClient,
   redisPub,
@@ -254,4 +293,5 @@ module.exports = {
   removeUsername,
   getRoomUsernames,
   getUsername,
+  getAllRooms,
 };

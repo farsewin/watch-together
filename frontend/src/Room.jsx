@@ -5,7 +5,7 @@ import VoiceCall from "./VoiceCall";
 // Use environment variable or fallback to production URL
 const API_URL =
   import.meta.env.VITE_BACKEND_URL ||
-  "https://watch-together-production-7fd9.up.railway.app";
+  "http://localhost:3001";
 
 function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
   const [status, setStatus] = useState("");
@@ -14,6 +14,9 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
   const [username, setUsername] = useState("");
   const [users, setUsers] = useState({});
   const [copied, setCopied] = useState(false);
+  const [roomNameInput, setRoomNameInput] = useState("");
+  const [activeRooms, setActiveRooms] = useState([]);
+  const [roomName, setRoomName] = useState(""); // Current room's name
 
   // Leave room and destroy session
   const leaveRoom = () => {
@@ -67,15 +70,40 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Fetch all active rooms
+  const fetchActiveRooms = async () => {
+    try {
+      const response = await fetch(`${API_URL}/list-rooms`);
+      if (response.ok) {
+        const data = await response.json();
+        setActiveRooms(data);
+      }
+    } catch (error) {
+      console.error("Error fetching rooms:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!isJoined) {
+      fetchActiveRooms();
+      const interval = setInterval(fetchActiveRooms, 10000); // Refresh every 10s
+      return () => clearInterval(interval);
+    }
+  }, [isJoined]);
+
   // Create a new room
   const createRoom = async () => {
     try {
       const response = await fetch(`${API_URL}/create-room`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomName: roomNameInput }),
       });
       const data = await response.json();
       setRoomId(data.roomId);
-      setStatus(`Room created: ${data.roomId}`);
+      setRoomName(data.roomName);
+      setStatus(`Room "${data.roomName}" created!`);
+      fetchActiveRooms(); // Update list
     } catch (error) {
       setStatus("Error creating room");
       console.error(error);
@@ -141,11 +169,48 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
 
       {!isJoined && (
         <>
-          <div className="room-actions">
-            <button onClick={createRoom} disabled={isJoined}>
+          <div className="room-create-section">
+            <input
+              type="text"
+              placeholder="Room Name (e.g. Movie Night)"
+              value={roomNameInput}
+              onChange={(e) => setRoomNameInput(e.target.value)}
+              className="room-name-input"
+            />
+            <button onClick={createRoom} disabled={isJoined || !roomNameInput.trim()}>
               Create Room
             </button>
           </div>
+
+          <div className="separator"><span>OR</span></div>
+
+          <div className="active-rooms-section">
+            <h3>Active Rooms</h3>
+            {activeRooms.length === 0 ? (
+              <p className="no-rooms">No active rooms found</p>
+            ) : (
+              <div className="room-list">
+                {activeRooms.map((room) => (
+                  <div 
+                    key={room.roomId} 
+                    className={`room-item ${roomId === room.roomId ? 'selected' : ''}`}
+                    onClick={() => {
+                      setRoomId(room.roomId);
+                      setRoomName(room.name);
+                    }}
+                  >
+                    <div className="room-item-info">
+                      <span className="room-item-name">{room.name}</span>
+                      <span className="room-item-users">👥 {room.userCount}/5</span>
+                    </div>
+                    {room.persistent && <span className="persistent-badge">Public</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="separator"><span>OR JOIN BY ID</span></div>
 
           <div className="room-join">
             <input
@@ -176,8 +241,11 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
 
       {isJoined && (
         <div className="room-info-compact">
+          <span className="room-name-display">
+            🏠 {roomName || "Room"}
+          </span>
           <span className="room-id-label">
-            Room: {roomId.slice(0, 8)}...
+            ID: {roomId.slice(0, 8)}...
             <button
               className="copy-btn"
               onClick={copyRoomId}

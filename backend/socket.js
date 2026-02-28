@@ -12,6 +12,7 @@ const {
   saveUsername,
   removeUsername,
   getRoomUsernames,
+  redisClient,
 } = require("./redis");
 
 function setupSocket(io) {
@@ -242,19 +243,38 @@ function setupSocket(io) {
         );
 
         if (hostCheck) {
-          // Host is leaving - destroy the room completely
-          console.log(`Host leaving - destroying room ${roomId}`);
+          // Check if room is persistent before destroying
+          const roomData = await getRoomData(roomId);
+          const isPersistent = (await redisClient.hGet(`room:${roomId}`, "persistent")) === "true";
 
-          // Notify all users in the room that it's closing
-          io.to(roomId).emit("room-closed", {
-            message: "Host closed the room",
-          });
+          if (isPersistent) {
+            console.log(`Host leaving persistent room ${roomId} - skipping destruction`);
+            await removeUsername(roomId, socket.id);
+            await leaveRoom(roomId, socket.id);
+            
+            const users = await getRoomUsernames(roomId);
+            const userCount = Object.keys(users).length;
 
-          // Remove username before deleting room
-          await removeUsername(roomId, socket.id);
+            socket.to(roomId).emit("user-left", {
+              userCount,
+              users,
+              username: socket.username,
+            });
+          } else {
+            // Host is leaving non-persistent room - destroy it
+            console.log(`Host leaving - destroying room ${roomId}`);
 
-          // Delete room completely from Redis
-          await deleteRoom(roomId);
+            // Notify all users in the room that it's closing
+            io.to(roomId).emit("room-closed", {
+              message: "Host closed the room",
+            });
+
+            // Remove username before deleting room
+            await removeUsername(roomId, socket.id);
+
+            // Delete room completely from Redis
+            await deleteRoom(roomId);
+          }
 
           // Leave the socket room
           socket.leave(roomId);

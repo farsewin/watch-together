@@ -1,16 +1,28 @@
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const { AccessToken } = require("livekit-server-sdk");
-const { reserveRoom, roomExists } = require("../redis");
+const { reserveRoom, roomExists, getAllRooms } = require("../redis");
 
 const router = express.Router();
 
 // Create a new room
 router.post("/create-room", async (req, res) => {
+  const { roomName } = req.body;
   const roomId = uuidv4();
-  await reserveRoom(roomId);
-  console.log(`Room reserved: ${roomId}`);
-  res.json({ roomId });
+  await reserveRoom(roomId, roomName || "New Room");
+  console.log(`Room reserved: ${roomId} (${roomName || "New Room"})`);
+  res.json({ roomId, roomName: roomName || "New Room" });
+});
+
+// List all rooms
+router.get("/list-rooms", async (req, res) => {
+  try {
+    const rooms = await getAllRooms();
+    res.json(rooms);
+  } catch (error) {
+    console.error("Error listing rooms:", error);
+    res.status(500).json({ error: "Failed to list rooms" });
+  }
 });
 
 // Generate LiveKit token for voice call

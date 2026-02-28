@@ -6,7 +6,7 @@ const { createAdapter } = require("@socket.io/redis-adapter");
 const cors = require("cors");
 const roomRoutes = require("./routes/room");
 const setupSocket = require("./socket");
-const { connectRedis, redisPub, redisSub } = require("./redis");
+const { connectRedis, redisPub, redisSub, reserveRoom } = require("./redis");
 
 // Global error handlers
 process.on("uncaughtException", (err) => {
@@ -69,6 +69,10 @@ async function startServer() {
     // Attach Redis adapter for horizontal scaling
     io.adapter(createAdapter(redisPub, redisSub));
     console.log("Socket.IO Redis adapter attached");
+
+    // Initialize persistent "Public Room"
+    await reserveRoom("public", "Public Room", true);
+    console.log("Persistent Public Room initialized");
 
     // Setup socket handlers
     setupSocket(io);

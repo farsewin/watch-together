@@ -54,6 +54,7 @@ body {
   display: flex;
   gap: 0.5rem;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 .room-join input {
@@ -190,6 +191,126 @@ button:disabled {
   margin-left: auto;
   color: #888;
   font-size: 0.8rem;
+}
+
+/* Room Management UI */
+.room-create-section {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.room-name-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: #0f3460;
+  color: #eaeaea;
+}
+
+.separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.5rem 0;
+  color: #555;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.separator::before,
+.separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #333;
+}
+
+.separator:not(:empty)::before {
+  margin-right: .5em;
+}
+
+.separator:not(:empty)::after {
+  margin-left: .5em;
+}
+
+.active-rooms-section h3 {
+  font-size: 1rem;
+  color: #4ecca3;
+  margin-bottom: 0.75rem;
+}
+
+.room-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.room-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #0f3460;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.room-item:hover {
+  background: #16213e;
+  border-color: #4ecca3;
+}
+
+.room-item.selected {
+  background: #1a2a4a;
+  border-color: #4ecca3;
+  box-shadow: 0 0 10px rgba(78, 204, 163, 0.2);
+}
+
+.room-item-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.room-item-name {
+  font-weight: bold;
+  color: #eaeaea;
+  font-size: 0.95rem;
+}
+
+.room-item-users {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.persistent-badge {
+  background: #e94560;
+  color: white;
+  font-size: 0.65rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.no-rooms {
+  text-align: center;
+  color: #555;
+  padding: 1rem;
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.room-name-display {
+  font-weight: bold;
+  color: #4ecca3;
+  font-size: 1.1rem;
 }
 
 /* Video Section */
