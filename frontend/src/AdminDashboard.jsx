@@ -11,12 +11,16 @@ const AdminDashboard = () => {
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
   const fetchRooms = async () => {
-    const token = getToken();
+    const token = localStorage.getItem("watchTogether_adminToken");
     if (!token) return;
     try {
       const res = await fetch(`${BACKEND_URL}/list-rooms`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
+      if (res.status === 401 || res.status === 403) {
+        handleLogout();
+        return;
+      }
       const data = await res.json();
       setRooms(data);
     } catch (err) {
@@ -25,10 +29,20 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    const token = getToken();
+    const token = localStorage.getItem("watchTogether_adminToken");
     if (token) {
-      setIsLoggedIn(true);
-      if (!socket.connected) socket.connect();
+      try {
+        // Simple base64 decode to check role without a library
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        if (payload.role === "admin") {
+          setIsLoggedIn(true);
+          if (!socket.connected) socket.connect();
+        } else {
+          localStorage.removeItem("watchTogether_adminToken");
+        }
+      } catch (e) {
+        localStorage.removeItem("watchTogether_adminToken");
+      }
     }
   }, []);
 
@@ -50,7 +64,7 @@ const AdminDashboard = () => {
       });
       const data = await res.json();
       if (res.ok && data.token) {
-        saveToken(data.token);
+        localStorage.setItem("watchTogether_adminToken", data.token);
         setIsLoggedIn(true);
         setError("");
         if (!socket.connected) socket.connect();
@@ -64,7 +78,7 @@ const AdminDashboard = () => {
 
   const deleteRoom = async (roomId) => {
     if (!window.confirm(`Are you sure you want to delete room ${roomId}?`)) return;
-    const token = getToken();
+    const token = localStorage.getItem("watchTogether_adminToken");
     try {
       const res = await fetch(`${BACKEND_URL}/admin/delete-room/${roomId}`, {
         method: "DELETE",
@@ -72,6 +86,9 @@ const AdminDashboard = () => {
       });
       if (res.ok) {
         fetchRooms();
+      } else if (res.status === 403) {
+        alert("Session expired or unauthorized. Please re-login.");
+        handleLogout();
       }
     } catch (err) {
       console.error("Delete failed", err);
@@ -86,20 +103,24 @@ const AdminDashboard = () => {
   };
 
   const initPublic = async () => {
-    const token = getToken();
+    const token = localStorage.getItem("watchTogether_adminToken");
     try {
-      await fetch(`${BACKEND_URL}/admin/init-public`, {
+      const res = await fetch(`${BACKEND_URL}/admin/init-public`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${token}` },
       });
-      fetchRooms();
+      if (res.ok) {
+        fetchRooms();
+      } else if (res.status === 403) {
+        handleLogout();
+      }
     } catch (err) {
       console.error("Init public failed", err);
     }
   };
 
   const handleLogout = () => {
-    clearSession();
+    localStorage.removeItem("watchTogether_adminToken");
     setIsLoggedIn(false);
     socket.disconnect();
   };

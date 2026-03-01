@@ -15,8 +15,10 @@ const socket = io(BACKEND_URL, {
   transports: ["websocket"], // Force websocket to avoid sticky session issues
   upgrade: false,
   auth: (cb) => {
-    const token = localStorage.getItem("watchTogether_token");
-    cb({ token });
+    // Prioritize admin token if it exists
+    const adminToken = localStorage.getItem("watchTogether_adminToken");
+    const guestToken = localStorage.getItem("watchTogether_token");
+    cb({ token: adminToken || guestToken });
   },
 });
 
