@@ -33,14 +33,17 @@ const verifySocketToken = (socket, next) => {
   const token = socket.handshake.auth.token;
 
   if (!token) {
+    console.log(`[AUTH] Socket connection rejected: No token provided (Socket ID: ${socket.id})`);
     return next(new Error("Authentication error: Token missing"));
   }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     socket.user = decoded; // Attach user data to socket
+    console.log(`[AUTH] Socket verified: ${decoded.username} (${decoded.role})`);
     next();
   } catch (err) {
+    console.log(`[AUTH] Socket token verification failed: ${err.message}`);
     next(new Error("Authentication error: Invalid token"));
   }
 };
