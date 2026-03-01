@@ -55,16 +55,16 @@ async function reserveRoom(roomId, roomName = "New Room", isPersistent = false) 
 }
 
 // Create a new room with host
-async function createRoom(roomId, hostSocketId) {
+async function createRoom(roomId, userId) {
   const roomKey = `room:${roomId}`;
   const usersKey = `room:${roomId}:users`;
 
-  await redisClient.hSet(roomKey, "host", hostSocketId);
-  await redisClient.sAdd(usersKey, hostSocketId);
+  await redisClient.hSet(roomKey, "host", userId);
+  await redisClient.sAdd(usersKey, userId);
   await redisClient.expire(roomKey, ROOM_TTL);
   await redisClient.expire(usersKey, ROOM_TTL);
 
-  return { host: hostSocketId, userCount: 1 };
+  return { host: userId, userCount: 1 };
 }
 
 // Check if room exists
@@ -80,7 +80,7 @@ async function getRoomUserCount(roomId) {
 }
 
 // Join an existing room
-async function joinRoom(roomId, socketId) {
+async function joinRoom(roomId, userId) {
   const roomKey = `room:${roomId}`;
   const usersKey = `room:${roomId}:users`;
 
@@ -91,13 +91,13 @@ async function joinRoom(roomId, socketId) {
   }
 
   // Check room is not full (max 5 users)
-  const userCount = await getRoomUserCount(roomId);
-  if (userCount >= 5) {
+  const users = await redisClient.sMembers(usersKey);
+  if (users.length >= 5 && !users.includes(userId)) {
     return { error: "Room is full" };
   }
 
   // Add user to room
-  await redisClient.sAdd(usersKey, socketId);
+  await redisClient.sAdd(usersKey, userId);
 
   // Refresh TTL
   await redisClient.expire(roomKey, ROOM_TTL);
@@ -110,12 +110,12 @@ async function joinRoom(roomId, socketId) {
 }
 
 // Leave a room
-async function leaveRoom(roomId, socketId) {
+async function leaveRoom(roomId, userId) {
   const roomKey = `room:${roomId}`;
   const usersKey = `room:${roomId}:users`;
 
   // Remove user from room
-  await redisClient.sRem(usersKey, socketId);
+  await redisClient.sRem(usersKey, userId);
 
   const userCount = await getRoomUserCount(roomId);
 
@@ -134,10 +134,10 @@ async function leaveRoom(roomId, socketId) {
 
   // If host left, assign new host
   const host = await redisClient.hGet(roomKey, "host");
-  if (host === socketId) {
-    const users = await redisClient.sMembers(usersKey);
-    if (users.length > 0) {
-      await redisClient.hSet(roomKey, "host", users[0]);
+  if (host === userId) {
+    const remainingUsers = await redisClient.sMembers(usersKey);
+    if (remainingUsers.length > 0) {
+      await redisClient.hSet(roomKey, "host", remainingUsers[0]);
     }
   }
 
@@ -156,11 +156,11 @@ async function deleteRoom(roomId) {
   return { deleted: true };
 }
 
-// Check if socket is the host
-async function isHost(roomId, socketId) {
+// Check if user is the host
+async function isHost(roomId, userId) {
   const roomKey = `room:${roomId}`;
   const host = await redisClient.hGet(roomKey, "host");
-  return host === socketId;
+  return host === userId;
 }
 
 // Get all room data
@@ -220,17 +220,17 @@ async function getVideoState(roomId) {
 
 // ============== Username Operations ==============
 
-// Save username for a socket
-async function saveUsername(roomId, socketId, username) {
+// Save username for a user
+async function saveUsername(roomId, userId, username) {
   const namesKey = `room:${roomId}:names`;
-  await redisClient.hSet(namesKey, socketId, username);
+  await redisClient.hSet(namesKey, userId, username);
   await redisClient.expire(namesKey, ROOM_TTL);
 }
 
 // Remove username when user leaves
-async function removeUsername(roomId, socketId) {
+async function removeUsername(roomId, userId) {
   const namesKey = `room:${roomId}:names`;
-  await redisClient.hDel(namesKey, socketId);
+  await redisClient.hDel(namesKey, userId);
 }
 
 // Get all usernames in room
@@ -240,10 +240,10 @@ async function getRoomUsernames(roomId) {
   return names || {};
 }
 
-// Get username for a specific socket
-async function getUsername(roomId, socketId) {
+// Get username for a specific user
+async function getUsername(roomId, userId) {
   const namesKey = `room:${roomId}:names`;
-  return await redisClient.hGet(namesKey, socketId);
+  return await redisClient.hGet(namesKey, userId);
 }
 
 // Get all active rooms

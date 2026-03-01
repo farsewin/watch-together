@@ -56,12 +56,12 @@ function setupSocket(io) {
 
         if (userCount === 0) {
           // First user or rejoining empty room (grace period) - become host
-          const result = await createRoom(roomId, socket.id);
+          const result = await createRoom(roomId, userId);
           socket.join(roomId);
           socket.roomId = roomId;
 
           // Save username to Redis
-          await saveUsername(roomId, socket.id, username);
+          await saveUsername(roomId, userId, username);
           const users = await getRoomUsernames(roomId);
 
           // Get saved video state for reconnection
@@ -80,7 +80,7 @@ function setupSocket(io) {
           });
         } else {
           // Room exists with users - try to join
-          const result = await joinRoom(roomId, socket.id);
+          const result = await joinRoom(roomId, userId);
 
           if (result.error) {
             socket.emit("room-error", { message: result.error });
@@ -94,10 +94,10 @@ function setupSocket(io) {
           socket.roomId = roomId;
 
           // Save username to Redis
-          await saveUsername(roomId, socket.id, username);
+          await saveUsername(roomId, userId, username);
           const users = await getRoomUsernames(roomId);
 
-          const userIsHost = result.host === socket.id;
+          const userIsHost = result.host === userId;
 
           console.log(
             `User ${username} (${socket.id}) joined room ${roomId} as ${userIsHost ? "HOST" : "GUEST"}. Users: ${result.userCount}`,
@@ -132,7 +132,7 @@ function setupSocket(io) {
       const { roomId, event, currentTime } = data;
 
       try {
-        const hostCheck = await isHost(roomId, socket.id);
+        const hostCheck = await isHost(roomId, socket.user.userId);
 
         if (!hostCheck) {
           console.log(`Guest ${socket.id} tried to send video event - ignored`);
@@ -165,7 +165,7 @@ function setupSocket(io) {
       const { roomId, url } = data;
 
       try {
-        const hostCheck = await isHost(roomId, socket.id);
+        const hostCheck = await isHost(roomId, socket.user.userId);
 
         if (!hostCheck) {
           console.log(`Guest ${socket.id} tried to change URL - ignored`);
@@ -203,7 +203,7 @@ function setupSocket(io) {
       const { roomId, currentTime } = data;
 
       try {
-        const hostCheck = await isHost(roomId, socket.id);
+        const hostCheck = await isHost(roomId, socket.user.userId);
 
         if (!hostCheck) {
           return;
@@ -249,7 +249,7 @@ function setupSocket(io) {
       if (!roomId) return;
 
       try {
-        const hostCheck = await isHost(roomId, socket.id);
+        const hostCheck = await isHost(roomId, socket.user.userId);
 
         console.log(
           `User ${socket.username || socket.id} explicitly leaving room ${roomId}. Is host: ${hostCheck}`,
@@ -268,8 +268,8 @@ function setupSocket(io) {
 
           if (isPersistent) {
             console.log(`Host leaving persistent room ${roomId} - skipping destruction`);
-            await removeUsername(roomId, socket.id);
-            await leaveRoom(roomId, socket.id);
+            await removeUsername(roomId, socket.user.userId);
+            await leaveRoom(roomId, socket.user.userId);
             
             const users = await getRoomUsernames(roomId);
             const userCount = Object.keys(users).length;
@@ -289,7 +289,7 @@ function setupSocket(io) {
             });
 
             // Remove username before deleting room
-            await removeUsername(roomId, socket.id);
+            await removeUsername(roomId, socket.user.userId);
 
             // Delete room completely from Redis
             await deleteRoom(roomId);
@@ -300,8 +300,8 @@ function setupSocket(io) {
           socket.roomId = null;
         } else {
           // Guest is leaving - just remove them normally
-          await removeUsername(roomId, socket.id);
-          await leaveRoom(roomId, socket.id);
+          await removeUsername(roomId, socket.user.userId);
+          await leaveRoom(roomId, socket.user.userId);
 
           const users = await getRoomUsernames(roomId);
           const userCount = Object.keys(users).length;
@@ -333,8 +333,8 @@ function setupSocket(io) {
             disconnectTimers.delete(userId);
 
             // Remove username and leave room in Redis
-            await removeUsername(roomId, id);
-            const result = await leaveRoom(roomId, id);
+            await removeUsername(roomId, userId);
+            const result = await leaveRoom(roomId, userId);
 
             // Notify remaining users
             const users = await getRoomUsernames(roomId);
