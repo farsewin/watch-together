@@ -865,6 +865,9 @@ button:disabled {
 }
 
 /* 2. STYLE THE DROPDOWN AS A CARET (ARROW) */
+.custom-livekit-control .lk-button-group-menu {
+  display: none !important;
+}
 .custom-livekit-control .lk-button-menu {
   width: 24px !important;
   position: relative !important;
