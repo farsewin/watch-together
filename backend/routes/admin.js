@@ -1,22 +1,19 @@
 const express = require("express");
+const jwt = require("jsonwebtoken");
 const router = express.Router();
 const { getAllRooms, deleteRoom, reserveRoom } = require("../redis");
+const { isAdmin, JWT_SECRET } = require("../middleware/auth");
 
-// Simple middleware to check admin password
-const isAdmin = (req, res, next) => {
-  const password = req.headers["x-admin-password"];
-  if (password === process.env.ADMIN_PASSWORD) {
-    next();
-  } else {
-    res.status(401).json({ error: "Unauthorized" });
-  }
-};
-
-// Admin login check
+// Admin login - Issue JWT
 router.post("/admin/login", (req, res) => {
   const { password } = req.body;
   if (password === process.env.ADMIN_PASSWORD) {
-    res.json({ success: true });
+    const token = jwt.sign(
+      { role: "admin", username: "ROOT_ADMIN" },
+      JWT_SECRET,
+      { expiresIn: "24h" }
+    );
+    res.json({ success: true, token });
   } else {
     res.status(401).json({ error: "Invalid password" });
   }

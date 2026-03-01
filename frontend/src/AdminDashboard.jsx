@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import socket from "./socket";
+import socket, { saveToken, clearSession, getToken } from "./socket";
 
 const AdminDashboard = () => {
   const [password, setPassword] = useState("");
@@ -11,14 +11,26 @@ const AdminDashboard = () => {
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
   const fetchRooms = async () => {
+    const token = getToken();
+    if (!token) return;
     try {
-      const res = await fetch(`${BACKEND_URL}/list-rooms`);
+      const res = await fetch(`${BACKEND_URL}/list-rooms`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
       const data = await res.json();
       setRooms(data);
     } catch (err) {
       console.error("Error fetching rooms:", err);
     }
   };
+
+  useEffect(() => {
+    const token = getToken();
+    if (token) {
+      setIsLoggedIn(true);
+      if (!socket.connected) socket.connect();
+    }
+  }, []);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -36,9 +48,12 @@ const AdminDashboard = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
-      if (res.ok) {
+      const data = await res.json();
+      if (res.ok && data.token) {
+        saveToken(data.token);
         setIsLoggedIn(true);
         setError("");
+        if (!socket.connected) socket.connect();
       } else {
         setError("Invalid Admin Password");
       }
@@ -49,10 +64,11 @@ const AdminDashboard = () => {
 
   const deleteRoom = async (roomId) => {
     if (!window.confirm(`Are you sure you want to delete room ${roomId}?`)) return;
+    const token = getToken();
     try {
       const res = await fetch(`${BACKEND_URL}/admin/delete-room/${roomId}`, {
         method: "DELETE",
-        headers: { "x-admin-password": password },
+        headers: { "Authorization": `Bearer ${token}` },
       });
       if (res.ok) {
         fetchRooms();
@@ -64,21 +80,28 @@ const AdminDashboard = () => {
 
   const sendBroadcast = () => {
     if (!broadcastMsg.trim()) return;
-    socket.emit("admin-broadcast", { password, message: broadcastMsg });
+    socket.emit("admin-broadcast", { message: broadcastMsg });
     setBroadcastMsg("");
     alert("Broadcast sent!");
   };
 
   const initPublic = async () => {
+    const token = getToken();
     try {
       await fetch(`${BACKEND_URL}/admin/init-public`, {
         method: "POST",
-        headers: { "x-admin-password": password },
+        headers: { "Authorization": `Bearer ${token}` },
       });
       fetchRooms();
     } catch (err) {
       console.error("Init public failed", err);
     }
+  };
+
+  const handleLogout = () => {
+    clearSession();
+    setIsLoggedIn(false);
+    socket.disconnect();
   };
 
   if (!isLoggedIn) {
@@ -107,7 +130,7 @@ const AdminDashboard = () => {
     <div className="admin-dashboard">
       <header className="admin-header">
         <h1>ROOT ADMIN PANEL</h1>
-        <button className="admin-logout" onClick={() => setIsLoggedIn(false)}>LOGOUT</button>
+        <button className="admin-logout" onClick={handleLogout}>LOGOUT</button>
       </header>
 
       <div className="admin-grid">

@@ -6,6 +6,7 @@ const { createAdapter } = require("@socket.io/redis-adapter");
 const cors = require("cors");
 const roomRoutes = require("./routes/room");
 const adminRoutes = require("./routes/admin");
+const authRoutes = require("./routes/auth");
 const setupSocket = require("./socket");
 const { connectRedis, redisPub, redisSub, reserveRoom } = require("./redis");
 
@@ -48,6 +49,7 @@ app.get("/health", (req, res) => {
 // REST routes
 app.use(roomRoutes);
 app.use(adminRoutes);
+app.use(authRoutes);
 
 // Socket.IO setup
 const io = new Server(server, {

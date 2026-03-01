@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import socket, { saveSession, getSession, clearSession, userId } from "./socket";
+import socket, { saveSession, getSession, clearSession, saveToken, getToken } from "./socket";
 import VoiceCall from "./VoiceCall";
 
 // Use environment variable or fallback to production URL
@@ -111,42 +111,77 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
   };
 
   // Join existing room
-  const joinRoom = () => {
-    if (!roomId.trim()) {
-      setStatus("Please enter a room ID");
+  const handleJoin = async (targetRoomId, targetUsername) => {
+    if (!targetRoomId.trim() || !targetUsername.trim()) {
+      setStatus("Please enter a name and room ID");
       return;
     }
 
-    if (!username.trim()) {
-      setStatus("Please enter your name");
-      return;
+    // If we don't have a token, we need to "login" first
+    let token = getToken();
+    if (!token) {
+      try {
+        const res = await fetch(`${API_URL}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: targetUsername }),
+        });
+        const data = await res.json();
+        if (data.token) {
+          token = data.token;
+          saveToken(token);
+        } else {
+          throw new Error("No token received");
+        }
+      } catch (err) {
+        console.error("Auth failed:", err);
+        setStatus("Authentication failed. Please try again.");
+        return;
+      }
     }
 
-    socket.connect();
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    // Remove existing listeners to avoid duplicates on rejoin
+    socket.off("room-joined");
+    socket.off("user-joined");
+    socket.off("user-left");
+    socket.off("room-error");
+    socket.off("room-closed");
 
     socket.on("room-joined", (data) => {
-      setStatus(`Joined room successfully!`);
-      setUserCount(data.userCount);
-      setUsers(data.users || {});
+      console.log("Room joined successfully:", data.roomId);
       setIsJoined(true);
-      saveSession(data.roomId, username, data.isHost);
+      setUsers(data.users || {});
+      setUserCount(data.userCount || 1);
+      setRoomId(data.roomId);
+      setRoomName(data.name || "Room");
+      setStatus("");
+      
+      // Save session for recovery
+      saveSession(data.roomId, targetUsername, data.isHost);
       onJoinRoom(data.roomId, data.isHost, data.videoState);
-    });
-
-    socket.on("room-error", (data) => {
-      setStatus(`Error: ${data.message}`);
     });
 
     socket.on("user-joined", (data) => {
       setUserCount(data.userCount);
-      setUsers(data.users || {});
-      setStatus(`${data.username} joined the room!`);
+      setUsers(data.users);
+      console.log(`User ${data.username} joined. Total users: ${data.userCount}`);
     });
 
     socket.on("user-left", (data) => {
       setUserCount(data.userCount);
-      setUsers(data.users || {});
-      setStatus(`${data.username || "User"} left the room`);
+      setUsers(data.users);
+      console.log(`User ${data.username} left. Total users: ${data.userCount}`);
+    });
+
+    socket.on("room-error", (data) => {
+      alert(data.message);
+      setStatus(data.message);
+      socket.disconnect();
+      onLeaveRoom();
     });
 
     socket.on("room-closed", (data) => {
@@ -160,7 +195,7 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
       onLeaveRoom();
     });
 
-    socket.emit("join-room", { roomId, username, userId });
+    socket.emit("join-room", { roomId: targetRoomId });
   };
 
   return (
@@ -194,10 +229,7 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
                   <div 
                     key={room.roomId} 
                     className={`room-item ${roomId === room.roomId ? 'selected' : ''}`}
-                    onClick={() => {
-                      setRoomId(room.roomId);
-                      setRoomName(room.name);
-                    }}
+                    onClick={() => handleJoin(room.roomId, username)}
                   >
                     <div className="room-item-info">
                       <span className="room-item-name">{room.name}</span>
@@ -228,7 +260,7 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
               disabled={isJoined}
             />
             <button
-              onClick={joinRoom}
+              onClick={() => handleJoin(roomId, username)}
               disabled={isJoined || !roomId || !username}
             >
               Join Room

@@ -14,19 +14,24 @@ const {
   getRoomUsernames,
   redisClient,
 } = require("./redis");
+const { verifySocketToken } = require("./middleware/auth");
 
 // Track disconnection timers: userId -> timer
 const disconnectTimers = new Map();
 const DISCONNECT_GRACE = 30000; // 30 seconds
 
 function setupSocket(io) {
+  // Use JWT handshake middleware
+  io.use(verifySocketToken);
+
   io.on("connection", (socket) => {
-    console.log(`User connected: ${socket.id}`);
+    console.log(`User connected: ${socket.id} (user: ${socket.user.username})`);
 
     // Handle room join (async)
     socket.on("join-room", async (data) => {
       try {
-        const { roomId, username, userId } = data;
+        const { roomId } = data;
+        const { userId, username } = socket.user;
         
         if (userId && disconnectTimers.has(userId)) {
           console.log(`User ${userId} reconnected within grace period. Canceling kick timer.`);
@@ -34,7 +39,8 @@ function setupSocket(io) {
           disconnectTimers.delete(userId);
         }
 
-        socket.userId = userId; // Store userId on socket
+        socket.userId = userId; // Still store on socket for easy access in disconnect
+        socket.username = username;
         const exists = await roomExists(roomId);
 
         // Room must be created via /create-room endpoint first
@@ -53,7 +59,6 @@ function setupSocket(io) {
           const result = await createRoom(roomId, socket.id);
           socket.join(roomId);
           socket.roomId = roomId;
-          socket.username = username;
 
           // Save username to Redis
           await saveUsername(roomId, socket.id, username);
@@ -87,7 +92,6 @@ function setupSocket(io) {
 
           socket.join(roomId);
           socket.roomId = roomId;
-          socket.username = username;
 
           // Save username to Redis
           await saveUsername(roomId, socket.id, username);
@@ -354,10 +358,10 @@ function setupSocket(io) {
 
     // ============== Admin Events ==============
     socket.on("admin-broadcast", (data) => {
-      const { password, message } = data;
-      if (password !== process.env.ADMIN_PASSWORD) return;
+      const { message } = data;
+      if (socket.user.role !== "admin") return;
 
-      console.log(`[ADMIN BROADCAST]: ${message}`);
+      console.log(`[ADMIN BROADCAST] by ${socket.user.username}: ${message}`);
       io.emit("chat-message", {
         id: Date.now(),
         username: "📢 SYSTEM",
@@ -368,10 +372,10 @@ function setupSocket(io) {
     });
 
     socket.on("admin-kick", async (data) => {
-      const { password, targetSocketId, roomId } = data;
-      if (password !== process.env.ADMIN_PASSWORD) return;
+      const { targetSocketId, roomId } = data;
+      if (socket.user.role !== "admin") return;
 
-      console.log(`[ADMIN KICK]: ${targetSocketId} from ${roomId}`);
+      console.log(`[ADMIN KICK] by ${socket.user.username}: ${targetSocketId} from ${roomId}`);
       const targetSocket = io.sockets.sockets.get(targetSocketId);
       
       if (targetSocket) {
