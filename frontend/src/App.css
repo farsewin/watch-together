@@ -564,8 +564,34 @@ button:disabled {
 .chat-username {
   color: #e94560;
   font-weight: bold;
-  margin-right: 0.5rem;
 }
+
+.chat-message-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.mute-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 2px 4px;
+  border-radius: 4px;
+  opacity: 0.6;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mute-btn:hover {
+  opacity: 1;
+  background: rgba(233, 69, 96, 0.2);
+}
+
 
 .chat-text {
   color: #eaeaea;

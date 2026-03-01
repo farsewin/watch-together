@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import socket from "./socket";
 
-function Chat({ roomId }) {
+function Chat({ roomId, isHost }) {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
   const [typingUsers, setTypingUsers] = useState(new Set());
@@ -78,13 +78,30 @@ function Chat({ roomId }) {
     }
   };
 
+  const handleMute = (userId, username) => {
+    if (window.confirm(`Mute ${username}?`)) {
+      socket.emit("mute-user", { roomId, targetUserId: userId });
+    }
+  };
+
   return (
     <div className="chat-container">
       <div className="chat-header">💬 Chat</div>
       <div className="chat-messages">
         {messages.map((msg) => (
           <div key={msg.id} className="chat-message">
-            <span className="chat-username">{msg.username}:</span>
+            <div className="chat-message-info">
+              <span className="chat-username">{msg.username}:</span>
+              {isHost && msg.userId !== socket.user?.userId && (
+                <button 
+                  className="mute-btn" 
+                  onClick={() => handleMute(msg.userId, msg.username)}
+                  title="Mute user"
+                >
+                  🔇
+                </button>
+              )}
+            </div>
             <span className="chat-text">{msg.message}</span>
           </div>
         ))}

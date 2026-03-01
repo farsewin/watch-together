@@ -129,7 +129,7 @@ function App() {
               initialState={initialState}
             />
           </div>
-          <Chat roomId={joinedRoom} />
+          <Chat roomId={joinedRoom} isHost={isHost} />
         </div>
       )}
       <div className="app-footer">

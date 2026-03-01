@@ -18,6 +18,22 @@ function VoiceCallContent({ className }) {
   const { localParticipant } = useLocalParticipant();
   const participants = useParticipants();
   
+  useEffect(() => {
+    if (!localParticipant) return;
+
+    const handleForceMute = ({ mutedBy }) => {
+      console.log(`Force mute received from ${mutedBy}`);
+      localParticipant.setMicrophoneEnabled(false);
+      alert(`${mutedBy} (Host) has muted you.`);
+    };
+
+    socket.on("force-mute", handleForceMute);
+
+    return () => {
+      socket.off("force-mute", handleForceMute);
+    };
+  }, [localParticipant]);
+
   // Get list of all speakers (including local)
   const speakers = useMemo(() => {
     return participants

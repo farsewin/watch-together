@@ -229,6 +229,7 @@ function setupSocket(io) {
 
       const chatMessage = {
         id: Date.now(),
+        userId: socket.user.userId,
         username: socket.username || "Anonymous",
         message: message.trim(),
         timestamp: new Date().toISOString(),
@@ -251,6 +252,36 @@ function setupSocket(io) {
     socket.on("stop-typing", (data) => {
       const { roomId } = data;
       socket.to(roomId).emit("stop-typing", { username: socket.username });
+    });
+
+    // Handle host-initiated mute
+    socket.on("mute-user", async (data) => {
+      const { roomId, targetUserId } = data;
+
+      try {
+        const hostCheck = await isHost(roomId, socket.user.userId);
+        if (!hostCheck) {
+          console.log(`Unauthorized mute-user request from ${socket.username}`);
+          return;
+        }
+
+        console.log(`Host ${socket.username} is muting user ${targetUserId}`);
+
+        // Find the target user's socket
+        let targetSocket = null;
+        for (const [id, s] of io.of("/").sockets) {
+          if (s.user?.userId === targetUserId) {
+            targetSocket = s;
+            break;
+          }
+        }
+
+        if (targetSocket) {
+          targetSocket.emit("force-mute", { mutedBy: socket.username });
+        }
+      } catch (err) {
+        console.error("Error handling mute-user:", err);
+      }
     });
 
     // Handle explicit leave room (user clicks Leave button)
