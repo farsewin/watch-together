@@ -35,7 +35,8 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: allowedOrigins,
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "DELETE", "PUT", "PATCH"],
+    credentials: true,
   }),
 );
 
@@ -55,7 +56,8 @@ app.use(authRoutes);
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "DELETE", "PUT", "PATCH"],
+    credentials: true,
   },
   pingTimeout: 60000,
   pingInterval: 25000,
