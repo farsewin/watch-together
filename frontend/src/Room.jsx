@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import socket, { saveSession, getSession, clearSession } from "./socket";
+import socket, { saveSession, getSession, clearSession, userId } from "./socket";
 import VoiceCall from "./VoiceCall";
 
 // Use environment variable or fallback to production URL
@@ -160,7 +160,7 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
       onLeaveRoom();
     });
 
-    socket.emit("join-room", { roomId, username });
+    socket.emit("join-room", { roomId, username, userId });
   };
 
   return (

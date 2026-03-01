@@ -15,6 +15,10 @@ const {
   redisClient,
 } = require("./redis");
 
+// Track disconnection timers: userId -> timer
+const disconnectTimers = new Map();
+const DISCONNECT_GRACE = 30000; // 30 seconds
+
 function setupSocket(io) {
   io.on("connection", (socket) => {
     console.log(`User connected: ${socket.id}`);
@@ -22,10 +26,15 @@ function setupSocket(io) {
     // Handle room join (async)
     socket.on("join-room", async (data) => {
       try {
-        // Support both old format (string) and new format (object)
-        const roomId = typeof data === "string" ? data : data.roomId;
-        const username = typeof data === "object" ? data.username : "Anonymous";
+        const { roomId, username, userId } = data;
+        
+        if (userId && disconnectTimers.has(userId)) {
+          console.log(`User ${userId} reconnected within grace period. Canceling kick timer.`);
+          clearTimeout(disconnectTimers.get(userId));
+          disconnectTimers.delete(userId);
+        }
 
+        socket.userId = userId; // Store userId on socket
         const exists = await roomExists(roomId);
 
         // Room must be created via /create-room endpoint first
@@ -239,8 +248,14 @@ function setupSocket(io) {
         const hostCheck = await isHost(roomId, socket.id);
 
         console.log(
-          `User ${socket.username || socket.id} leaving room ${roomId}. Is host: ${hostCheck}`,
+          `User ${socket.username || socket.id} explicitly leaving room ${roomId}. Is host: ${hostCheck}`,
         );
+
+        // Cancel any pending disconnect timer if they leave manually
+        if (socket.userId && disconnectTimers.has(socket.userId)) {
+          clearTimeout(disconnectTimers.get(socket.userId));
+          disconnectTimers.delete(socket.userId);
+        }
 
         if (hostCheck) {
           // Check if room is persistent before destroying
@@ -303,33 +318,37 @@ function setupSocket(io) {
 
     // Handle disconnection
     socket.on("disconnect", async () => {
-      console.log(`User ${socket.username || socket.id} disconnected`);
+      const { roomId, username, id, userId } = socket;
+      console.log(`User ${username || id} (userId: ${userId}) disconnected. Starting 30s grace period.`);
 
-      if (socket.roomId) {
-        try {
-          // Remove username from Redis
-          await removeUsername(socket.roomId, socket.id);
+      if (roomId && userId) {
+        // Start a 30s timer before kicking the user
+        const timer = setTimeout(async () => {
+          try {
+            console.log(`Grace period expired for user ${userId}. Kicking from room ${roomId}.`);
+            disconnectTimers.delete(userId);
 
-          const result = await leaveRoom(socket.roomId, socket.id);
+            // Remove username and leave room in Redis
+            await removeUsername(roomId, id);
+            const result = await leaveRoom(roomId, id);
 
-          console.log(
-            `User ${socket.username || socket.id} left room ${socket.roomId}. Users remaining: ${result.userCount}`,
-          );
-
-          if (result.deleted) {
-            console.log(`Room ${socket.roomId} deleted (empty)`);
-          } else {
-            // Get updated user list and notify remaining users
-            const users = await getRoomUsernames(socket.roomId);
-            socket.to(socket.roomId).emit("user-left", {
+            // Notify remaining users
+            const users = await getRoomUsernames(roomId);
+            io.to(roomId).emit("user-left", {
               userCount: result.userCount,
               users,
-              username: socket.username,
+              username: username,
             });
+
+            if (result.deleted) {
+              console.log(`Room ${roomId} deleted (empty)`);
+            }
+          } catch (err) {
+            console.error("Error handling grace period expiry:", err);
           }
-        } catch (err) {
-          console.error("Error handling disconnect:", err);
-        }
+        }, DISCONNECT_GRACE);
+
+        disconnectTimers.set(userId, timer);
       }
     });
   });

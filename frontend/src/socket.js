@@ -5,6 +5,16 @@ const BACKEND_URL =
   import.meta.env.VITE_BACKEND_URL ||
   "http://localhost:3001";
 
+// Generate or retrieve a persistent unique User ID for this browser
+const getOrGenerateUserId = () => {
+  let userId = localStorage.getItem("watchTogether_userId");
+  if (!userId) {
+    userId = "u_" + Math.random().toString(36).substring(2, 11);
+    localStorage.setItem("watchTogether_userId", userId);
+  }
+  return userId;
+};
+
 const socket = io(BACKEND_URL, {
   autoConnect: false,
   reconnection: true,
@@ -14,6 +24,8 @@ const socket = io(BACKEND_URL, {
   timeout: 20000,
 });
 
+export const userId = getOrGenerateUserId();
+
 // Session persistence helpers
 export const saveSession = (roomId, username, isHost) => {
   localStorage.setItem(
@@ -21,6 +33,7 @@ export const saveSession = (roomId, username, isHost) => {
     JSON.stringify({
       roomId,
       username,
+      userId, // Add userId to session
       isHost,
       timestamp: Date.now(),
     }),
