@@ -18,8 +18,6 @@ const socket = io(BACKEND_URL, {
   },
 });
 
-export const userId = getOrGenerateUserId();
-
 // Session persistence helpers
 export const saveToken = (token) => {
   localStorage.setItem("watchTogether_token", token);
