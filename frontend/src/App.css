@@ -841,28 +841,50 @@ button:disabled {
 
 .custom-livekit-control .lk-button {
   background-color: transparent !important;
-  color: #eaeaea !important;
+  color: #0f3460 !important; /* HIDDEN LABEL COLOR (match with background) */
   border: none !important;
   padding: 0 10px !important;
-  font-size: 0 !important; /* Hide text, keep icon */
   height: 100% !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 0 !important; /* Remove gap since text is gone */
+  gap: 8px !important;
   cursor: pointer !important;
   font-family: inherit !important;
 }
 
-/* Specifically hide the span containing the button text */
-.custom-livekit-control .lk-button > span {
-  display: none !important;
-}
-
+/* 1. ICON COLOR MUST BE VISIBLE */
 .custom-livekit-control .lk-button svg {
+  color: #eaeaea !important; 
   width: 16px !important;
   height: 16px !important;
-  font-size: initial !important; /* Restore icon size */
+}
+
+/* 2. STYLE THE DROPDOWN AS A CARET (ARROW) */
+.custom-livekit-control .lk-button-menu {
+  width: 24px !important;
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #0f3460 !important; /* HIDE "XX" TEXT */
+}
+
+.custom-livekit-control .lk-button-menu::after {
+  content: "" !important;
+  display: block !important;
+  width: 6px !important;
+  height: 6px !important;
+  border-right: 2px solid #eaeaea !important; /* CHOOSE ARROW COLOR HERE */
+  border-bottom: 2px solid #eaeaea !important; /* CHOOSE ARROW COLOR HERE */
+  transform: rotate(45deg) translateY(-2px) !important;
+  opacity: 0.8 !important;
+}
+
+/* HIDE LABELS BY MATCHING BACKGROUND COLOR */
+.custom-livekit-control .lk-button span,
+.custom-livekit-control .lk-button-menu span {
+  color: #0f3460 !important; /* Change this to match your background color */
 }
 
 .custom-livekit-control .lk-button:hover {
