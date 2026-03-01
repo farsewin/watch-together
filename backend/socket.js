@@ -242,6 +242,17 @@ function setupSocket(io) {
       io.to(roomId).emit("chat-message", chatMessage);
     });
 
+    // Handle typing events
+    socket.on("typing", (data) => {
+      const { roomId } = data;
+      socket.to(roomId).emit("typing", { username: socket.username });
+    });
+
+    socket.on("stop-typing", (data) => {
+      const { roomId } = data;
+      socket.to(roomId).emit("stop-typing", { username: socket.username });
+    });
+
     // Handle explicit leave room (user clicks Leave button)
     socket.on("leave-room", async (data) => {
       const { roomId } = data;
