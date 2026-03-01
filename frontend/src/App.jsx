@@ -132,6 +132,11 @@ function App() {
           <Chat roomId={joinedRoom} />
         </div>
       )}
+      <div className="app-footer">
+        <a href="mailto:farsewin@gmail.com" className="feedback-button">
+          📩 Feedback
+        </a>
+      </div>
     </div>
   );
 }

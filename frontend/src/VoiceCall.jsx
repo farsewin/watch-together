@@ -3,6 +3,7 @@ import {
   LiveKitRoom,
   RoomAudioRenderer,
   ControlBar,
+  useLocalParticipant,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 
@@ -11,6 +12,21 @@ const API_URL =
   "http://localhost:3001";
 
 const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || "ws://localhost:7880";
+
+function VoiceCallContent({ className }) {
+  const { localParticipant } = useLocalParticipant();
+  const isSpeaking = localParticipant?.isSpeaking;
+
+  return (
+    <>
+      <ControlBar 
+        controls={{ microphone: true, camera: false, screenShare: false, leave: false }} 
+        className={`${className} ${isSpeaking ? "is-speaking" : ""}`}
+      />
+      <RoomAudioRenderer />
+    </>
+  );
+}
 
 function VoiceCall({ roomId, username }) {
   const [token, setToken] = useState("");
@@ -62,11 +78,7 @@ function VoiceCall({ roomId, username }) {
       serverUrl={LIVEKIT_URL}
       style={{ display: "inline-flex", alignItems: "center", flex: 1, margin: 0, padding: 0 }}
     >
-      <ControlBar 
-        controls={{ microphone: true, camera: false, screenShare: false, leave: false }} 
-        className="custom-livekit-control"
-      />
-      <RoomAudioRenderer />
+      <VoiceCallContent className="custom-livekit-control" />
     </LiveKitRoom>
   );
 }

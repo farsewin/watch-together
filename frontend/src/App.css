@@ -865,8 +865,44 @@ button:disabled {
 }
 
 /* 2. STYLE THE DROPDOWN AS A CARET (ARROW) */
+.custom-livekit-control.is-speaking .lk-button svg {
+  color: #4ecca3 !important;
+  filter: drop-shadow(0 0 5px rgba(78, 204, 163, 0.5)) !important;
+}
+
 .custom-livekit-control .lk-button-group-menu {
   display: none !important;
+}
+
+/* Feedback Button Styles */
+.app-footer {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
+}
+
+.feedback-button {
+  background: #1a1a2e;
+  color: #4ecca3;
+  border: 1px solid #4ecca3;
+  padding: 8px 16px;
+  border-radius: 20px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.feedback-button:hover {
+  background: #4ecca3;
+  color: #1a1a2e;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(78, 204, 163, 0.4);
 }
 .custom-livekit-control .lk-button-menu {
   width: 24px !important;
