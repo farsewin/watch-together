@@ -22,11 +22,11 @@ const server = http.createServer(app);
 // Allow frontend URLs
 const FRONTEND_URL =
   process.env.FRONTEND_URL ||
-  "https://supportive-wisdom-production-eeec.up.railway.app";
+  "https://watch-too.up.railway.app";
 const allowedOrigins = [
   FRONTEND_URL,
   "http://localhost:5173",
-  "https://supportive-wisdom-production-eeec.up.railway.app",
+  "https://watch-too.up.railway.app",
 ];
 
 // CORS configuration
