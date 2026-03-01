@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Room from "./Room";
+import AdminDashboard from "./AdminDashboard";
 import VideoPlayer from "./VideoPlayer";
 import Chat from "./Chat";
 import socket from "./socket";
@@ -85,6 +86,10 @@ function App() {
       socket.emit("url-change", { roomId: joinedRoom, url: videoUrl });
     }
   };
+
+  if (window.location.pathname === "/admin") {
+    return <AdminDashboard />;
+  }
 
   return (
     <div className="app">

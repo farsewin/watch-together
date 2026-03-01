@@ -351,6 +351,34 @@ function setupSocket(io) {
         disconnectTimers.set(userId, timer);
       }
     });
+
+    // ============== Admin Events ==============
+    socket.on("admin-broadcast", (data) => {
+      const { password, message } = data;
+      if (password !== process.env.ADMIN_PASSWORD) return;
+
+      console.log(`[ADMIN BROADCAST]: ${message}`);
+      io.emit("chat-message", {
+        id: Date.now(),
+        username: "📢 SYSTEM",
+        message: message,
+        timestamp: new Date().toISOString(),
+        isAdmin: true,
+      });
+    });
+
+    socket.on("admin-kick", async (data) => {
+      const { password, targetSocketId, roomId } = data;
+      if (password !== process.env.ADMIN_PASSWORD) return;
+
+      console.log(`[ADMIN KICK]: ${targetSocketId} from ${roomId}`);
+      const targetSocket = io.sockets.sockets.get(targetSocketId);
+      
+      if (targetSocket) {
+        targetSocket.emit("room-closed", { message: "You were removed by an administrator" });
+        targetSocket.disconnect(true);
+      }
+    });
   });
 }
 
