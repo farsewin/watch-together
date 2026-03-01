@@ -46,6 +46,7 @@ async function reserveRoom(roomId, roomName = "New Room", isPersistent = false) 
     reserved: "true",
     name: roomName,
     persistent: isPersistent ? "true" : "false",
+    createdAt: Date.now().toString(), // Add timestamp
   });
   if (!isPersistent) {
     await redisClient.expire(roomKey, ROOM_TTL);
@@ -257,18 +258,25 @@ async function getAllRooms() {
     }
 
     const roomId = key.split(":")[1];
-    const name = await redisClient.hGet(key, "name");
-    const persistent = await redisClient.hGet(key, "persistent");
+    const data = await redisClient.hGetAll(key); // Get all fields at once for efficiency
     const usersKey = `room:${roomId}:users`;
     const userCount = await redisClient.sCard(usersKey);
 
     rooms.push({
       roomId,
-      name: name || "Unnamed Room",
-      persistent: persistent === "true",
+      name: data.name || "Unnamed Room",
+      persistent: data.persistent === "true",
+      createdAt: parseInt(data.createdAt) || 0,
       userCount: userCount || 0,
     });
   }
+
+  // Sort rooms: Persistent (Public) first, then by createdAt descending
+  rooms.sort((a, b) => {
+    if (a.persistent && !b.persistent) return -1;
+    if (!a.persistent && b.persistent) return 1;
+    return b.createdAt - a.createdAt;
+  });
 
   return rooms;
 }
