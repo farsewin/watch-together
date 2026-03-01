@@ -841,21 +841,25 @@ button:disabled {
 
 .custom-livekit-control .lk-button {
   background-color: transparent !important;
-  color: #0f3460 !important; /* HIDDEN LABEL COLOR (match with background) */
+  color: #eaeaea !important;
   border: none !important;
   padding: 0 10px !important;
+  font-size: 0 !important; /* Hide text, keep icon */
   height: 100% !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 8px !important;
+  gap: 0 !important; /* Remove gap since text is gone */
   cursor: pointer !important;
   font-family: inherit !important;
 }
 
-/* 1. ICON COLOR MUST BE VISIBLE */
+/* Specifically hide the span containing the button text */
+.custom-livekit-control .lk-button > span {
+  display: none !important;
+}
+
 .custom-livekit-control .lk-button svg {
-  color: #eaeaea !important; 
   width: 16px !important;
   height: 16px !important;
 }
