@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   LiveKitRoom,
   RoomAudioRenderer,
   ControlBar,
   useLocalParticipant,
+  useParticipants,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 
@@ -15,16 +16,31 @@ const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL || "ws://localhost:7880";
 
 function VoiceCallContent({ className }) {
   const { localParticipant } = useLocalParticipant();
-  const isSpeaking = localParticipant?.isSpeaking;
+  const participants = useParticipants();
+  
+  // Get list of all speakers (including local)
+  const speakers = useMemo(() => {
+    return participants
+      .filter(p => p.isSpeaking)
+      .map(p => p.identity);
+  }, [participants]);
+
+  const isLocalSpeaking = localParticipant?.isSpeaking;
 
   return (
-    <>
+    <div className="voice-call-interface">
       <ControlBar 
         controls={{ microphone: true, camera: false, screenShare: false, leave: false }} 
-        className={`${className} ${isSpeaking ? "is-speaking" : ""}`}
+        className={`${className} ${isLocalSpeaking ? "is-speaking" : ""}`}
       />
+      {speakers.length > 0 && (
+        <div className="active-speakers">
+          <span className="speaking-dot"></span>
+          {speakers.join(", ")} is talking...
+        </div>
+      )}
       <RoomAudioRenderer />
-    </>
+    </div>
   );
 }
 

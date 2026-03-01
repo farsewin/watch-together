@@ -944,3 +944,45 @@ button:disabled {
   padding: 0 6px !important;
   color: #eaeaea !important;
 }
+
+/* Global Speaking Indicator Styles */
+.voice-call-interface {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.active-speakers {
+  font-size: 0.8rem;
+  color: #4ecca3;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(78, 204, 163, 0.1);
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(78, 204, 163, 0.2);
+  white-space: nowrap;
+  animation: speakingFadeIn 0.3s ease-out;
+}
+
+.speaking-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #4ecca3;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 8px #4ecca3;
+  animation: speakingPulse 1s infinite alternate;
+}
+
+@keyframes speakingPulse {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(1.3); opacity: 0.7; }
+}
+
+@keyframes speakingFadeIn {
+  from { opacity: 0; transform: translateX(-5px); }
+  to { opacity: 1; transform: translateX(0); }
+}
