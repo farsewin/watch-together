@@ -7,6 +7,7 @@ import {
   useParticipants,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
+import socket from "./socket";
 
 const API_URL =
   import.meta.env.VITE_BACKEND_URL ||
