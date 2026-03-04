@@ -203,6 +203,7 @@ button:disabled {
 
 .room-create-section .input-group {
   display: flex;
+  flex-wrap: wrap;
   flex: 1;
   gap: 0.5rem;
   min-width: 250px;
