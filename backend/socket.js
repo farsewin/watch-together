@@ -53,12 +53,7 @@ function setupSocket(io) {
         }
 
         socket.emit("status-update", { message: `Checking room ${roomId}...` });
-        const { roomId, password } = data;
-        const exists = await roomExists(roomId);
-        if (!exists) {
-          socket.emit("room-error", { message: "Room not found" });
-          return;
-        }
+        const { password } = data;
 
         const userCount = await getRoomUserCount(roomId);
 
