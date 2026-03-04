@@ -7,11 +7,11 @@ const router = express.Router();
 
 // Create a new room
 router.post("/create-room", async (req, res) => {
-  const { roomName } = req.body;
+  const { roomName, roomPassword } = req.body;
   const roomId = uuidv4();
-  await reserveRoom(roomId, roomName || "New Room");
-  console.log(`Room reserved: ${roomId} (${roomName || "New Room"})`);
-  res.json({ roomId, roomName: roomName || "New Room" });
+  await reserveRoom(roomId, roomName || "New Room", false, roomPassword);
+  console.log(`Room reserved: ${roomId} (${roomName || "New Room"})${roomPassword ? ' [Private]' : ''}`);
+  res.json({ roomId, roomName: roomName || "New Room", isProtected: !!roomPassword });
 });
 
 // List all rooms

@@ -15,6 +15,7 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
   const [users, setUsers] = useState({});
   const [copied, setCopied] = useState(false);
   const [roomNameInput, setRoomNameInput] = useState("");
+  const [roomPasswordInput, setRoomPasswordInput] = useState("");
   const [activeRooms, setActiveRooms] = useState([]);
   const [roomName, setRoomName] = useState(""); // Current room's name
 
@@ -97,12 +98,13 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
       const response = await fetch(`${API_URL}/create-room`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomName: roomNameInput }),
+        body: JSON.stringify({ roomName: roomNameInput, roomPassword: roomPasswordInput }),
       });
       const data = await response.json();
       setRoomId(data.roomId);
       setRoomName(data.roomName);
       setStatus(`Room "${data.roomName}" created!`);
+      setRoomPasswordInput(""); // Clear password
       fetchActiveRooms(); // Update list
     } catch (error) {
       setStatus("Error creating room");
@@ -111,7 +113,7 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
   };
 
   // Join existing room
-  const handleJoin = async (targetRoomId, targetUsername) => {
+  const handleJoin = async (targetRoomId, targetUsername, targetPassword = null) => {
     if (!targetRoomId.trim() || !targetUsername.trim()) {
       setStatus("Please enter a name and room ID");
       return;
@@ -195,7 +197,7 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
       onLeaveRoom();
     });
 
-    socket.emit("join-room", { roomId: targetRoomId });
+    socket.emit("join-room", { roomId: targetRoomId, password: targetPassword });
   };
 
   return (
@@ -205,13 +207,22 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
       {!isJoined && (
         <>
           <div className="room-create-section">
-            <input
-              type="text"
-              placeholder="Room Name (e.g. Movie Night)"
-              value={roomNameInput}
-              onChange={(e) => setRoomNameInput(e.target.value)}
-              className="room-name-input"
-            />
+            <div className="input-group">
+              <input
+                type="text"
+                placeholder="Room Name (e.g. Movie Night)"
+                value={roomNameInput}
+                onChange={(e) => setRoomNameInput(e.target.value)}
+                className="room-name-input"
+              />
+              <input
+                type="password"
+                placeholder="Password (Optional)"
+                value={roomPasswordInput}
+                onChange={(e) => setRoomPasswordInput(e.target.value)}
+                className="room-password-input"
+              />
+            </div>
             <button onClick={createRoom} disabled={isJoined || !roomNameInput.trim()}>
               Create Room
             </button>
@@ -229,10 +240,20 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
                   <div 
                     key={room.roomId} 
                     className={`room-item ${roomId === room.roomId ? 'selected' : ''}`}
-                    onClick={() => handleJoin(room.roomId, username)}
+                    onClick={() => {
+                      if (room.isProtected) {
+                        const pass = prompt("Enter room password:");
+                        if (pass !== null) handleJoin(room.roomId, username, pass);
+                      } else {
+                        handleJoin(room.roomId, username);
+                      }
+                    }}
                   >
                     <div className="room-item-info">
-                      <span className="room-item-name">{room.name}</span>
+                      <span className="room-item-name">
+                        {room.isProtected && <span className="lock-icon" title="Protected Room">🔒</span>}
+                        {room.name}
+                      </span>
                       <span className="room-item-users">👥 {room.userCount}/5</span>
                     </div>
                     {room.persistent && <span className="persistent-badge">Public</span>}
@@ -260,7 +281,15 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
               disabled={isJoined}
             />
             <button
-              onClick={() => handleJoin(roomId, username)}
+              onClick={() => {
+                const knownRoom = activeRooms.find(r => r.roomId === roomId);
+                if (knownRoom?.isProtected) {
+                  const pass = prompt("Enter room password:");
+                  if (pass !== null) handleJoin(roomId, username, pass);
+                } else {
+                  handleJoin(roomId, username);
+                }
+              }}
               disabled={isJoined || !roomId || !username}
             >
               Join Room

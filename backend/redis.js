@@ -40,14 +40,20 @@ const RECONNECT_GRACE = 30;
 // ============== Room Operations ==============
 
 // Reserve a room (from REST endpoint) - no host yet
-async function reserveRoom(roomId, roomName = "New Room", isPersistent = false) {
+async function reserveRoom(roomId, roomName = "New Room", isPersistent = false, password = null) {
   const roomKey = `room:${roomId}`;
-  await redisClient.hSet(roomKey, {
+  const data = {
     reserved: "true",
     name: roomName,
     persistent: isPersistent ? "true" : "false",
     createdAt: Date.now().toString(), // Add timestamp
-  });
+  };
+
+  if (password) {
+    data.password = password;
+  }
+
+  await redisClient.hSet(roomKey, data);
   if (!isPersistent) {
     await redisClient.expire(roomKey, ROOM_TTL);
   }
@@ -80,14 +86,19 @@ async function getRoomUserCount(roomId) {
 }
 
 // Join an existing room
-async function joinRoom(roomId, userId) {
+async function joinRoom(roomId, userId, password = null) {
   const roomKey = `room:${roomId}`;
   const usersKey = `room:${roomId}:users`;
 
   // Check room exists
-  const exists = await roomExists(roomId);
-  if (!exists) {
+  const roomData = await redisClient.hGetAll(roomKey);
+  if (!roomData || Object.keys(roomData).length === 0) {
     return { error: "Room not found" };
+  }
+
+  // Check password if protected
+  if (roomData.password && roomData.password !== password) {
+    return { error: "Incorrect password" };
   }
 
   // Check room is not full (max 5 users)
@@ -100,8 +111,10 @@ async function joinRoom(roomId, userId) {
   await redisClient.sAdd(usersKey, userId);
 
   // Refresh TTL
-  await redisClient.expire(roomKey, ROOM_TTL);
-  await redisClient.expire(usersKey, ROOM_TTL);
+  if (roomData.persistent !== "true") {
+    await redisClient.expire(roomKey, ROOM_TTL);
+    await redisClient.expire(usersKey, ROOM_TTL);
+  }
 
   const newCount = await getRoomUserCount(roomId);
   const host = await redisClient.hGet(roomKey, "host");
@@ -266,6 +279,7 @@ async function getAllRooms() {
       roomId,
       name: data.name || "Unnamed Room",
       persistent: data.persistent === "true",
+      isProtected: !!data.password,
       createdAt: parseInt(data.createdAt) || 0,
       userCount: userCount || 0,
     });

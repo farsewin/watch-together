@@ -52,6 +52,14 @@ function setupSocket(io) {
           return;
         }
 
+        socket.emit("status-update", { message: `Checking room ${roomId}...` });
+        const { roomId, password } = data;
+        const exists = await roomExists(roomId);
+        if (!exists) {
+          socket.emit("room-error", { message: "Room not found" });
+          return;
+        }
+
         const userCount = await getRoomUserCount(roomId);
 
         if (userCount === 0) {
@@ -77,10 +85,11 @@ function setupSocket(io) {
             isHost: true,
             videoState,
             users,
+            name: (await redisClient.hGet(`room:${roomId}`, "name")) || "Room",
           });
         } else {
           // Room exists with users - try to join
-          const result = await joinRoom(roomId, userId);
+          const result = await joinRoom(roomId, userId, password);
 
           if (result.error) {
             socket.emit("room-error", { message: result.error });
