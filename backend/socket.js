@@ -166,7 +166,7 @@ function setupSocket(io) {
 
     // Handle URL change - only host can change
     socket.on("url-change", async (data) => {
-      const { roomId, url } = data;
+      const { roomId, url, subtitleUrl } = data;
 
       try {
         const hostCheck = await isHost(roomId, socket.user.userId);
@@ -176,18 +176,31 @@ function setupSocket(io) {
           return;
         }
 
-        console.log(`URL change from HOST ${socket.id}: ${url}`);
+        console.log(`URL/Sub change from HOST ${socket.id}: ${url}, ${subtitleUrl}`);
 
-        // Save URL to Redis
-        await saveVideoState(roomId, { url, currentTime: 0, playing: false });
+        // Save state to Redis
+        await saveVideoState(roomId, { url, subtitleUrl });
 
-        // Broadcast to other users in the room
-        socket.to(roomId).emit("url-change", {
-          url,
-          senderId: socket.id,
-        });
+        // Broadcast to everyone including host (to confirm change) or just others? 
+        // App.jsx handles local state so just to others.
+        socket.to(roomId).emit("url-change", { url, subtitleUrl });
       } catch (err) {
-        console.error("Error handling URL change:", err);
+        console.error("Error handling url-change:", err);
+      }
+    });
+
+    // Handle periodic sync heartbeat from host
+    socket.on("sync", async (data) => {
+      const { roomId, currentTime } = data;
+      try {
+        const hostCheck = await isHost(roomId, socket.user.userId);
+        if (hostCheck) {
+          socket.to(roomId).emit("sync", { currentTime, senderId: socket.id });
+          // Optionally update Redis with current time
+          // await saveVideoState(roomId, { currentTime });
+        }
+      } catch (err) {
+        console.error("Sync error:", err);
       }
     });
 

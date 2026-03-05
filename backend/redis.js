@@ -198,6 +198,7 @@ async function saveVideoState(roomId, state) {
 
   const newState = {
     url: state.url !== undefined ? state.url : existing.url || "",
+    subtitleUrl: state.subtitleUrl !== undefined ? state.subtitleUrl : existing.subtitleUrl || "",
     currentTime: String(
       state.currentTime !== undefined
         ? state.currentTime
@@ -226,6 +227,7 @@ async function getVideoState(roomId) {
 
   return {
     url: state.url || "",
+    subtitleUrl: state.subtitleUrl || "",
     currentTime: parseFloat(state.currentTime) || 0,
     playing: state.playing === "1",
   };

@@ -14,6 +14,7 @@ function App() {
   const [joinedRoom, setJoinedRoom] = useState(null);
   const [isHost, setIsHost] = useState(false);
   const [videoUrl, setVideoUrl] = useState(DEFAULT_VIDEO);
+  const [subtitleUrl, setSubtitleUrl] = useState("");
   const [initialState, setInitialState] = useState(null);
 
   const handleJoinRoom = (id, hostStatus, videoState) => {
@@ -26,6 +27,9 @@ function App() {
       if (videoState.url) {
         setVideoUrl(videoState.url);
       }
+      if (videoState.subtitleUrl) {
+        setSubtitleUrl(videoState.subtitleUrl);
+      }
       setInitialState({
         currentTime: videoState.currentTime || 0,
         playing: videoState.playing || false,
@@ -37,6 +41,7 @@ function App() {
     setJoinedRoom(null);
     setIsHost(false);
     setVideoUrl(DEFAULT_VIDEO);
+    setSubtitleUrl("");
     setRoomId("");
   };
 
@@ -46,15 +51,16 @@ function App() {
 
     // When receiving URL change (from host)
     const handleUrlChange = (data) => {
-      console.log("Received URL change:", data.url);
-      setVideoUrl(data.url);
+      console.log("Received video/sub change:", data);
+      if (data.url) setVideoUrl(data.url);
+      if (data.subtitleUrl !== undefined) setSubtitleUrl(data.subtitleUrl);
     };
 
     // When guest requests URL (only host responds)
     const handleUrlRequest = () => {
       if (isHost) {
-        console.log("Guest requested URL, sending:", videoUrl);
-        socket.emit("url-change", { roomId: joinedRoom, url: videoUrl });
+        console.log("Guest requested config, sending:", { videoUrl, subtitleUrl });
+        socket.emit("url-change", { roomId: joinedRoom, url: videoUrl, subtitleUrl });
       }
     };
 
@@ -82,8 +88,8 @@ function App() {
   // Broadcast URL when host finishes typing
   const broadcastUrl = () => {
     if (isHost && joinedRoom && videoUrl) {
-      console.log("Host broadcasting URL:", videoUrl);
-      socket.emit("url-change", { roomId: joinedRoom, url: videoUrl });
+      console.log("Host broadcasting config:", { videoUrl, subtitleUrl });
+      socket.emit("url-change", { roomId: joinedRoom, url: videoUrl, subtitleUrl });
     }
   };
 
@@ -111,20 +117,35 @@ function App() {
               </div>
             )}
             <div className="video-url-input">
-              <label>Video URL:</label>
-              <input
-                type="text"
-                value={videoUrl}
-                onChange={handleUrlChange}
-                onBlur={broadcastUrl}
-                onKeyDown={(e) => e.key === "Enter" && broadcastUrl()}
-                placeholder={isHost ? "Enter video URL" : "Host controls video"}
-                disabled={!isHost}
-              />
+              <div className="input-row">
+                <label>Video URL:</label>
+                <input
+                  type="text"
+                  value={videoUrl}
+                  onChange={handleUrlChange}
+                  onBlur={broadcastUrl}
+                  onKeyDown={(e) => e.key === "Enter" && broadcastUrl()}
+                  placeholder={isHost ? "Enter video URL (Direct or Pixeldrain)" : "Host controls video"}
+                  disabled={!isHost}
+                />
+              </div>
+              <div className="input-row">
+                <label>Subtitles (.vtt):</label>
+                <input
+                  type="text"
+                  value={subtitleUrl}
+                  onChange={(e) => isHost && setSubtitleUrl(e.target.value)}
+                  onBlur={broadcastUrl}
+                  onKeyDown={(e) => e.key === "Enter" && broadcastUrl()}
+                  placeholder={isHost ? "Enter .vtt URL (Optional)" : "Host controls subtitles"}
+                  disabled={!isHost}
+                />
+              </div>
             </div>
             <VideoPlayer
               roomId={joinedRoom}
               videoUrl={videoUrl}
+              subtitleUrl={subtitleUrl}
               isHost={isHost}
               initialState={initialState}
             />

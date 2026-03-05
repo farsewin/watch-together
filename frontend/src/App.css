@@ -370,25 +370,38 @@ button:disabled {
 
 .video-url-input {
   display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.input-row {
+  display: flex;
   gap: 0.5rem;
   align-items: center;
-  margin-bottom: 0.5rem;
 }
 
-.video-url-input label {
+.input-row label {
   white-space: nowrap;
   color: #888;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+  min-width: 90px;
 }
 
-.video-url-input input {
+.input-row input {
   flex: 1;
-  padding: 0.4rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   border: none;
   border-radius: 6px;
   font-size: 0.85rem;
   background: #0f3460;
   color: #eaeaea;
+  outline: none;
+  transition: box-shadow 0.2s;
+}
+
+.input-row input:focus {
+  box-shadow: 0 0 5px rgba(233, 69, 96, 0.5);
 }
 
 /* Video Container */
