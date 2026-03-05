@@ -14,7 +14,7 @@ export const convertVideoUrl = (url) => {
     const fileId = match[1];
     // Using ?download forces the server to serve the file directly 
     // which is more reliable for Video.js
-    return `https://pixeldrain.com/api/file/${fileId}?download`;
+    return `https://pixeldrain.com/api/file/${fileId}`;
   }
 
   return url;
