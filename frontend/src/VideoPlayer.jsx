@@ -95,29 +95,35 @@ function VideoPlayer({ roomId, videoUrl, subtitleUrl, isHost, initialState }) {
     return () => clearInterval(interval);
   }, [isHost, roomId]);
 
-  const playerOptions = useMemo(() => ({
-    autoplay: false,
-    controls: true,
-    responsive: true,
-    fluid: true,
-    techOrder: ["youtube", "html5"],
-    sources: [{
-      src: syncedUrl,
-      type: getVideoType(syncedUrl)
-    }],
-    youtube: {
-      ytControls: 0,
-      iv_load_policy: 3,
-      modestbranding: 1
-    },
-    tracks: subtitleUrl ? [{
-      kind: 'subtitles',
-      src: subtitleUrl,
-      srclang: 'en',
-      label: 'Subtitles',
-      default: true
-    }] : []
-  }), [syncedUrl, subtitleUrl]);
+  const playerOptions = useMemo(() => {
+    const type = getVideoType(syncedUrl);
+    const isYouTube = type === "video/youtube";
+    
+    return {
+      autoplay: false,
+      controls: true,
+      responsive: true,
+      fluid: true,
+      techOrder: isYouTube ? ["youtube"] : ["html5"],
+      sources: [{
+        src: syncedUrl,
+        type: type
+      }],
+      youtube: {
+        ytControls: 0,
+        iv_load_policy: 3,
+        modestbranding: 1
+      },
+      tracks: subtitleUrl ? [{
+        kind: 'subtitles',
+        src: subtitleUrl,
+        srclang: 'en',
+        label: 'Subtitles',
+        default: true
+      }] : []
+    };
+  }, [syncedUrl, subtitleUrl]);
+
 
   return (
     <div className="video-player-container">

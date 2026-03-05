@@ -34,25 +34,27 @@ export const hasDrifted = (localTime, targetTime, threshold = 1.5) => {
  * Supports YouTube, HLS, and standard video files.
  */
 export const getVideoType = (url) => {
-  if (!url) return undefined;
+  if (!url) return "video/mp4";
 
   const urlLower = url.toLowerCase();
 
+  // YouTube
   if (urlLower.includes("youtube.com/") || urlLower.includes("youtu.be/")) {
     return "video/youtube";
   }
 
+  // HLS
   if (urlLower.includes(".m3u8") || urlLower.includes("m3u8")) {
     return "application/x-mpegURL";
   }
 
-  // Common extensions
-  if (urlLower.endsWith(".mp4")) return "video/mp4";
+  // Common extensions (WebM, Ogg)
   if (urlLower.endsWith(".webm")) return "video/webm";
   if (urlLower.endsWith(".ogg")) return "video/ogg";
-  if (urlLower.endsWith(".mov")) return "video/mp4"; // MOV usually plays as mp4
-
-  // If it's a known API like Pixeldrain or has no extension, 
-  // let Video.js guess by returning undefined
-  return undefined;
+  
+  // Default fallback for everything else (Pixeldrain, MP4, etc.)
+  // Providing an explicit type helps Video.js choose the right tech 
+  // when the URL has no extension.
+  return "video/mp4";
 };
+

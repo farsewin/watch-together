@@ -12,14 +12,22 @@ const VideoJSPlayer = (props) => {
     // Make sure Video.js player is only initialized once
     if (!playerRef.current) {
       // The Video.js player needs to be _inside_ the component el for React 18 Strict Mode. 
-      const videoElement = document.createElement("video-js");
-
-      videoElement.classList.add('vjs-big-play-centered');
+      const videoElement = document.createElement("video");
+      videoElement.classList.add('video-js', 'vjs-big-play-centered');
+      videoElement.setAttribute("referrerpolicy", "no-referrer");
+      videoElement.setAttribute("playsinline", "true");
       videoRef.current.appendChild(videoElement);
 
       const player = playerRef.current = videojs(videoElement, options, () => {
-        videojs.log('player is ready');
+        console.log('VideoJSPlayer: Initialized. Tech:', player.techName_);
         onReady && onReady(player);
+      });
+
+      // Status logging
+      player.on('loadstart', () => console.log('VideoJSPlayer: Loading source:', player.src()));
+      player.on('error', () => {
+        const error = player.error();
+        console.error('VideoJSPlayer: ERROR:', error.code, error.message);
       });
 
       // Event listeners for synchronization
@@ -41,6 +49,7 @@ const VideoJSPlayer = (props) => {
       player.on('timeupdate', () => {
         onTimeUpdate && onTimeUpdate(player.currentTime());
       });
+
 
     // You could update an existing player in the else block here, on prop change, for example:
     } else {
