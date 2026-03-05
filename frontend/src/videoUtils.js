@@ -42,6 +42,8 @@ export const hasDrifted = (localTime, targetTime, threshold = 1.5) => {
 export const getVideoType = (url) => {
   if (!url) return "video/mp4";
 
+  const urlLower = url.toLowerCase();
+
   // YouTube
   if (urlLower.includes("youtube.com/") || urlLower.includes("youtu.be/")) {
     return "video/youtube";
