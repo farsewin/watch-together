@@ -6,14 +6,20 @@ export const convertVideoUrl = (url) => {
   if (!url) return "";
 
   // Pixeldrain conversion
-  const pixeldrainRegex = /pixeldrain\.com\/u\/([a-zA-Z0-9]+)/;
-  const pixeldrainMatch = url.match(pixeldrainRegex);
-  if (pixeldrainMatch) {
-    return `https://pixeldrain.com/api/file/${pixeldrainMatch[1]}`;
+  // Handle /u/ links, /api/file/ links, and raw links
+  const pixeldrainIdRegex = /pixeldrain\.com\/(?:u|api\/file)\/([a-zA-Z0-9]+)/;
+  const match = url.match(pixeldrainIdRegex);
+  
+  if (match) {
+    const fileId = match[1];
+    // Using ?download forces the server to serve the file directly 
+    // which is more reliable for Video.js
+    return `https://pixeldrain.com/api/file/${fileId}?download`;
   }
 
   return url;
 };
+
 
 /**
  * Checks if local time has drifted too far from the target (host) time.
@@ -36,17 +42,21 @@ export const hasDrifted = (localTime, targetTime, threshold = 1.5) => {
 export const getVideoType = (url) => {
   if (!url) return "video/mp4";
 
-  const urlLower = url.toLowerCase();
-
   // YouTube
   if (urlLower.includes("youtube.com/") || urlLower.includes("youtu.be/")) {
     return "video/youtube";
+  }
+
+  // Pixeldrain API or generic API streams
+  if (urlLower.includes("pixeldrain.com/api/file/")) {
+    return "video/mp4";
   }
 
   // HLS
   if (urlLower.includes(".m3u8") || urlLower.includes("m3u8")) {
     return "application/x-mpegURL";
   }
+
 
   // Common extensions (WebM, Ogg)
   if (urlLower.endsWith(".webm")) return "video/webm";
