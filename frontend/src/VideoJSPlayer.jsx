@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import videojs from 'video.js';
 import 'video.js/dist/video-js.css';
+import 'videojs-youtube';
 
 const VideoJSPlayer = (props) => {
   const videoRef = useRef(null);
@@ -46,7 +47,13 @@ const VideoJSPlayer = (props) => {
       const player = playerRef.current;
 
       player.autoplay(options.autoplay);
-      player.src(options.sources);
+      
+      // Update source only if changed
+      const currentSrc = player.src();
+      const newSrc = options.sources[0]?.src;
+      if (newSrc && currentSrc !== newSrc) {
+        player.src(options.sources);
+      }
 
       // Handle subtitle tracks
       if (options.tracks) {

@@ -1,15 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import VideoJSPlayer from "./VideoJSPlayer";
 import socket from "./socket";
-import { convertVideoUrl, hasDrifted } from "./videoUtils";
+import { convertVideoUrl, hasDrifted, getVideoType } from "./videoUtils";
 
 function VideoPlayer({ roomId, videoUrl, subtitleUrl, isHost, initialState }) {
   const playerRef = useRef(null);
-  const [syncedUrl, setSyncedUrl] = useState(convertVideoUrl(videoUrl));
-
-  useEffect(() => {
-    setSyncedUrl(convertVideoUrl(videoUrl));
-  }, [videoUrl]);
+  const syncedUrl = useMemo(() => convertVideoUrl(videoUrl), [videoUrl]);
 
   const handlePlayerReady = (player) => {
     playerRef.current = player;
@@ -99,15 +95,21 @@ function VideoPlayer({ roomId, videoUrl, subtitleUrl, isHost, initialState }) {
     return () => clearInterval(interval);
   }, [isHost, roomId]);
 
-  const playerOptions = {
+  const playerOptions = useMemo(() => ({
     autoplay: false,
     controls: true,
     responsive: true,
     fluid: true,
+    techOrder: ["youtube", "html5"],
     sources: [{
       src: syncedUrl,
-      type: syncedUrl.endsWith('.m3u8') ? 'application/x-mpegURL' : 'video/mp4'
+      type: getVideoType(syncedUrl)
     }],
+    youtube: {
+      ytControls: 0,
+      iv_load_policy: 3,
+      modestbranding: 1
+    },
     tracks: subtitleUrl ? [{
       kind: 'subtitles',
       src: subtitleUrl,
@@ -115,7 +117,7 @@ function VideoPlayer({ roomId, videoUrl, subtitleUrl, isHost, initialState }) {
       label: 'Subtitles',
       default: true
     }] : []
-  };
+  }), [syncedUrl, subtitleUrl]);
 
   return (
     <div className="video-player-container">

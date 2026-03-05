@@ -25,3 +25,34 @@ export const convertVideoUrl = (url) => {
 export const hasDrifted = (localTime, targetTime, threshold = 1.5) => {
   return Math.abs(localTime - targetTime) > threshold;
 };
+/**
+ * Detects the video type based on the URL.
+ * Supports YouTube, HLS, and standard video files.
+ */
+/**
+ * Detects the video type based on the URL.
+ * Supports YouTube, HLS, and standard video files.
+ */
+export const getVideoType = (url) => {
+  if (!url) return undefined;
+
+  const urlLower = url.toLowerCase();
+
+  if (urlLower.includes("youtube.com/") || urlLower.includes("youtu.be/")) {
+    return "video/youtube";
+  }
+
+  if (urlLower.includes(".m3u8") || urlLower.includes("m3u8")) {
+    return "application/x-mpegURL";
+  }
+
+  // Common extensions
+  if (urlLower.endsWith(".mp4")) return "video/mp4";
+  if (urlLower.endsWith(".webm")) return "video/webm";
+  if (urlLower.endsWith(".ogg")) return "video/ogg";
+  if (urlLower.endsWith(".mov")) return "video/mp4"; // MOV usually plays as mp4
+
+  // If it's a known API like Pixeldrain or has no extension, 
+  // let Video.js guess by returning undefined
+  return undefined;
+};
