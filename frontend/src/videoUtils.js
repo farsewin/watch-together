@@ -12,9 +12,11 @@ export const convertVideoUrl = (url) => {
   
   if (match) {
     const fileId = match[1];
-    // Using ?download forces the server to serve the file directly 
-    // which is more reliable for Video.js
-    return `https://pixeldrain.com/api/file/${fileId}`;
+    // Use local backend proxy to avoid CORS/403 issues
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || "http" + (window.location.hostname === "localhost" ? "://localhost:3001" : "s://" + window.location.host.replace("3000", "3001"));
+    // If running in development with default ports, ensure it points to 3001
+    const finalBackendUrl = backendUrl.includes("localhost:5173") ? "http://localhost:3001" : backendUrl;
+    return `${finalBackendUrl}/stream/${fileId}`;
   }
 
   return url;

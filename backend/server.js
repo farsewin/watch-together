@@ -7,6 +7,7 @@ const cors = require("cors");
 const roomRoutes = require("./routes/room");
 const adminRoutes = require("./routes/admin");
 const authRoutes = require("./routes/auth");
+const proxyRoutes = require("./routes/proxy");
 const setupSocket = require("./socket");
 const { connectRedis, redisPub, redisSub, reserveRoom } = require("./redis");
 
@@ -51,6 +52,7 @@ app.get("/health", (req, res) => {
 app.use(roomRoutes);
 app.use(adminRoutes);
 app.use(authRoutes);
+app.use(proxyRoutes);
 
 // Socket.IO setup
 const io = new Server(server, {
