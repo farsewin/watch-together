@@ -9,6 +9,7 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || (window.location.hostnam
 
 const NetflixWatchParty = () => {
   const [room, setRoom] = useState(null);
+  const [roomId, setRoomId] = useState(""); // Needed for Room component internal state
   const [socket, setSocket] = useState(null);
   const [content, setContent] = useState(null); // { tmdbId, type, season, episode }
   const [syncState, setSyncState] = useState({ currentTime: 0, playing: true });
@@ -22,29 +23,29 @@ const NetflixWatchParty = () => {
   }, []);
 
   // Handle Room Join/State
-  const handleRoomJoined = (roomData) => {
-    setRoom(roomData);
-    // If there's an existing video state in the room, restore it
-    if (roomData.videoState && roomData.videoState.tmdbId) {
+  const handleJoinRoom = (id, hostStatus, videoState) => {
+    setRoom({ id }); 
+    setIsHost(hostStatus);
+
+    if (videoState && videoState.isNetflix) {
       setContent({
-        tmdbId: roomData.videoState.tmdbId,
-        type: roomData.videoState.type,
-        season: roomData.videoState.season,
-        episode: roomData.videoState.episode
+        tmdbId: videoState.tmdbId,
+        type: videoState.type,
+        season: videoState.season,
+        episode: videoState.episode
       });
       setSyncState({
-        currentTime: roomData.videoState.currentTime || 0,
-        playing: roomData.videoState.playing
+        currentTime: videoState.currentTime || 0,
+        playing: videoState.playing
       });
     }
   };
 
-  // Check if current user is host
-  useEffect(() => {
-    if (room && socket) {
-      setIsHost(room.hostId === socket.id);
-    }
-  }, [room, socket]);
+  const handleLeaveRoom = () => {
+    setRoom(null);
+    setRoomId("");
+    setContent(null);
+  };
 
   // Socket listeners for Netflix events
   useEffect(() => {
@@ -52,6 +53,8 @@ const NetflixWatchParty = () => {
 
     socket.on("netflix-sync", (data) => {
       console.log("[Netflix] Received sync:", data);
+      
+      // Update content info
       setContent({
         tmdbId: data.tmdbId,
         type: data.type,
@@ -59,11 +62,11 @@ const NetflixWatchParty = () => {
         episode: data.episode
       });
       
-      // We only update syncState if the drift is significant
-      // to avoid iframe reloads on every 'timeupdate'
+      // Update playback state
       setSyncState(prev => {
         const drift = Math.abs(prev.currentTime - data.currentTime);
-        if (drift > 5 || data.event === "seeked" || data.event === "play" || data.event === "pause") {
+        // Only trigger a state update (which reloads iframe) if drift is high or it's a critical event
+        if (drift > 10 || data.event === "seeked" || data.event === "load") {
            return { currentTime: data.currentTime, playing: data.playing };
         }
         return prev;
@@ -77,7 +80,7 @@ const NetflixWatchParty = () => {
   const handlePlayerStateChange = (state) => {
     if (!isHost || !socket || !room) return;
 
-    // Emit to backend to broadcast to others
+    console.log("[Netflix] Host emitting event:", state.event);
     socket.emit("netflix-event", {
       roomId: room.id,
       ...state,
@@ -99,7 +102,14 @@ const NetflixWatchParty = () => {
   };
 
   if (!room) {
-    return <Room onJoined={handleRoomJoined} />;
+    return (
+      <Room 
+        onJoinRoom={handleJoinRoom} 
+        onLeaveRoom={handleLeaveRoom}
+        roomId={roomId}
+        setRoomId={setRoomId}
+      />
+    );
   }
 
   return (
@@ -110,13 +120,22 @@ const NetflixWatchParty = () => {
           <NetflixDashboard onSelect={handleContentSelect} />
         ) : (
           <div className="player-section">
-            <button 
-              onClick={() => setContent(null)} 
-              className="back-btn"
-              style={{ background: 'transparent', color: '#666', border: 'none', marginBottom: '10px', cursor: 'pointer' }}
-            >
-              ← Back to Selection
-            </button>
+            <div className="room-controls" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <button 
+                onClick={() => setContent(null)} 
+                className="back-btn"
+                style={{ background: 'transparent', color: '#e50914', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                ← Back to Selection
+              </button>
+              <button 
+                onClick={handleLeaveRoom} 
+                className="leave-btn"
+                style={{ background: '#333', color: '#fff', border: 'none', padding: '5px 15px', borderRadius: '4px', cursor: 'pointer' }}
+              >
+                Leave Room
+              </button>
+            </div>
             
             <div className="video-viewport" style={{ position: 'relative', paddingTop: '56.25%', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.8)' }}>
               <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
@@ -130,8 +149,8 @@ const NetflixWatchParty = () => {
             </div>
 
             <div className="room-info" style={{ marginTop: '20px', color: '#999', fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between' }}>
-               <span>Room: {room.name || room.id}</span>
-               <span>{isHost ? "You are the Host" : "Watching as Guest"}</span>
+               <span>Room ID: {room.id}</span>
+               <span>{isHost ? "🎬 You are the Host" : "👁 Watching as Guest"}</span>
             </div>
           </div>
         )}
