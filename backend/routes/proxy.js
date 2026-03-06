@@ -12,7 +12,7 @@ router.get("/stream/:id", async (req, res) => {
 
   try {
     const range = req.headers.range;
-    console.log(`[Proxy] Accessing ID ${id} - Range: ${range || 'none'}`);
+    console.log(`[Proxy] --> GET ${pixeldrainUrl} | Range: ${range || 'none'}`);
     
     const axiosConfig = {
       method: 'get',
@@ -20,9 +20,10 @@ router.get("/stream/:id", async (req, res) => {
       responseType: 'stream',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Referer': 'https://pixeldrain.com/'
+        'Referer': 'https://pixeldrain.com/',
+        'Accept': '*/*'
       },
-      validateStatus: false // Let us handle non-2xx statuses manually
+      validateStatus: () => true // Forward all statuses (200, 206, 403, etc.)
     };
 
     if (range) {
@@ -30,47 +31,55 @@ router.get("/stream/:id", async (req, res) => {
     }
 
     const response = await axios(axiosConfig);
+    const contentType = response.headers['content-type'] || '';
 
-    console.log(`[Proxy] Pixeldrain response for ${id}: ${response.status} ${response.statusText}`);
+    console.log(`[Proxy] <-- Pixeldrain Result: ${response.status} | Content-Type: ${contentType}`);
+
+    // CORB Protection: If Pixeldrain returns HTML (likely an error page), 
+    // we should log it clearly. HTML in a video source triggers CORB.
+    if (contentType.includes('text/html')) {
+      console.error(`[Proxy] [WARNING] Pixeldrain returned HTML instead of video. This will cause CORB. Check if the IP is blocked or link is private.`);
+    }
 
     // Forward the status code
     res.status(response.status);
     
-    // Forward relevant headers from Pixeldrain
-    const headersToForward = [
-      'content-type',
-      'content-length',
-      'content-range',
-      'accept-ranges',
-      'cache-control',
-      'last-modified',
-      'etag'
+    // Transparently forward all headers except those known to cause issues with piping
+    const hopByHopHeaders = [
+      'connection',
+      'keep-alive',
+      'proxy-authenticate',
+      'proxy-authorization',
+      'te',
+      'trailers',
+      'transfer-encoding',
+      'upgrade'
     ];
 
-    headersToForward.forEach(header => {
-      const value = response.headers[header];
-      if (value) {
-        res.setHeader(header, value);
+    Object.keys(response.headers).forEach(header => {
+      if (!hopByHopHeaders.includes(header.toLowerCase())) {
+        res.setHeader(header, response.headers[header]);
       }
     });
 
-    // Ensure common video player headers
+    // Ensure fundamental streaming headers are prominent
     if (!res.getHeader('accept-ranges')) res.setHeader("Accept-Ranges", "bytes");
+    if (!res.getHeader('access-control-allow-origin')) res.setHeader("Access-Control-Allow-Origin", "*");
 
     // Pipe the stream to the response
     response.data.pipe(res);
 
     response.data.on('error', (err) => {
-      console.error(`[Proxy] Stream error for ${id}:`, err.message);
+      console.error(`[Proxy] Stream pipe error for ${id}:`, err.message);
       if (!res.headersSent) {
         res.status(500).end();
       }
     });
 
   } catch (error) {
-    console.error(`[Proxy] Critical error for ${id}:`, error.message);
+    console.error(`[Proxy] [CRITICAL] Network error for ${id}:`, error.message);
     if (!res.headersSent) {
-      res.status(500).send("External Network Error");
+      res.status(500).send("Proxy Network Error");
     }
   }
 });
