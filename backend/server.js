@@ -63,7 +63,9 @@ app.get("/health", (req, res) => {
 app.use(roomRoutes);
 app.use(adminRoutes);
 app.use(authRoutes);
-app.use(proxyRoutes);
+app.use(proxyRouter);
+app.use(subtitleRouter);
+app.use("/api/subtitles", opensubtitlesRouter);
 
 // Socket.IO setup
 const io = new Server(server, {
