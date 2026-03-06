@@ -30,12 +30,21 @@ const allowedOrigins = [
   FRONTEND_URL,
   "http://localhost:5173",
   "https://watch-too.up.railway.app",
+  "https://watch-together-production-7fd9.up.railway.app",
 ];
 
-// CORS configuration
+// CORS configuration with logging
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      // allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        console.warn(`CORS: Origin ${origin} is not allowed`);
+        return callback(new Error("CORS: Not allowed"), false);
+      }
+      return callback(null, true);
+    },
     methods: ["GET", "POST", "DELETE", "PUT", "PATCH"],
     credentials: true,
   }),
