@@ -7,7 +7,37 @@ const API_URL =
   import.meta.env.VITE_BACKEND_URL ||
   "http://localhost:3001";
 
-function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
+function Room({ onJoinRoom = () => {}, onLeaveRoom = () => {}, roomId = "", setRoomId = () => {} }) {
+  console.log("Room props:", { 
+    onJoinRoom: typeof onJoinRoom, 
+    onLeaveRoom: typeof onLeaveRoom, 
+    roomId: typeof roomId, 
+    setRoomId: typeof setRoomId 
+  });
+
+  const safeSetRoomId = (id) => {
+    if (typeof setRoomId === "function") {
+      setRoomId(id);
+    } else {
+      console.warn("setRoomId is not a function in Room", { setRoomId, id });
+    }
+  };
+
+  const safeOnJoinRoom = (id, isHost, state) => {
+    if (typeof onJoinRoom === "function") {
+      onJoinRoom(id, isHost, state);
+    } else {
+      console.warn("onJoinRoom is not a function in Room", { onJoinRoom });
+    }
+  };
+
+  const safeOnLeaveRoom = () => {
+    if (typeof onLeaveRoom === "function") {
+      onLeaveRoom();
+    } else {
+      console.warn("onLeaveRoom is not a function in Room", { onLeaveRoom });
+    }
+  };
   const [status, setStatus] = useState("");
   const [userCount, setUserCount] = useState(0);
   const [isJoined, setIsJoined] = useState(false);
@@ -31,7 +61,7 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
     setStatus("");
     setUserCount(0);
     setUsers({});
-    onLeaveRoom();
+    safeOnLeaveRoom();
   };
 
   // Auto-restore session on mount
@@ -41,7 +71,7 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
     if (session && active) {
       setTimeout(() => {
         setUsername(session.username);
-        setRoomId(session.roomId);
+        safeSetRoomId(session.roomId);
       }, 0);
     }
     return () => { active = false; };
@@ -101,7 +131,7 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
         body: JSON.stringify({ roomName: roomNameInput, roomPassword: roomPasswordInput }),
       });
       const data = await response.json();
-      setRoomId(data.roomId);
+      safeSetRoomId(data.roomId);
       setRoomName(data.roomName);
       setStatus(`Room "${data.roomName}" created!`);
       setRoomPasswordInput(""); // Clear password
@@ -158,13 +188,13 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
       setIsJoined(true);
       setUsers(data.users || {});
       setUserCount(data.userCount || 1);
-      setRoomId(data.roomId);
+      safeSetRoomId(data.roomId);
       setRoomName(data.name || "Room");
       setStatus("");
       
       // Save session for recovery
       saveSession(data.roomId, targetUsername, data.isHost);
-      onJoinRoom(data.roomId, data.isHost, data.videoState);
+      safeOnJoinRoom(data.roomId, data.isHost, data.videoState);
     });
 
     socket.on("user-joined", (data) => {
@@ -183,7 +213,7 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
       alert(data.message);
       setStatus(data.message);
       socket.disconnect();
-      onLeaveRoom();
+      safeOnLeaveRoom();
     });
 
     socket.on("room-closed", (data) => {
@@ -194,7 +224,7 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
       setUserCount(0);
       setUsers({});
       socket.disconnect();
-      onLeaveRoom();
+      safeOnLeaveRoom();
     });
 
     socket.emit("join-room", { roomId: targetRoomId, password: targetPassword });
@@ -277,7 +307,7 @@ function Room({ onJoinRoom, onLeaveRoom, roomId, setRoomId }) {
               type="text"
               placeholder="Enter Room ID"
               value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
+              onChange={(e) => safeSetRoomId(e.target.value)}
               disabled={isJoined}
             />
             <button
