@@ -7,7 +7,7 @@ import Room from "./Room";
 const NetflixWatchParty = () => {
   const [room, setRoom] = useState(null);
   const [roomId, setRoomId] = useState(""); // Needed for Room component internal state
-  const [content, setContent] = useState(null); // { tmdbId, type, season, episode }
+  const [content, setContent] = useState(null); // { tmdbId, type, season, episode, subtitleUrl }
   const [syncState, setSyncState] = useState({ currentTime: 0, playing: true });
   const [isHost, setIsHost] = useState(false);
 
@@ -23,7 +23,8 @@ const NetflixWatchParty = () => {
         tmdbId: videoState.tmdbId,
         type: videoState.type,
         season: videoState.season,
-        episode: videoState.episode
+        episode: videoState.episode,
+        subtitleUrl: videoState.subtitleUrl
       });
       setSyncState({
         currentTime: videoState.currentTime || 0,
@@ -50,7 +51,8 @@ const NetflixWatchParty = () => {
         tmdbId: data.tmdbId,
         type: data.type,
         season: data.season,
-        episode: data.episode
+        episode: data.episode,
+        subtitleUrl: data.subtitleUrl
       });
       
       // Update playback state

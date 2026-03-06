@@ -5,11 +5,12 @@ const NetflixDashboard = ({ onSelect }) => {
   const [type, setType] = useState("movie");
   const [season, setSeason] = useState(1);
   const [episode, setEpisode] = useState(1);
+  const [subtitleUrl, setSubtitleUrl] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!tmdbId) return;
-    onSelect({ tmdbId, type, season, episode });
+    onSelect({ tmdbId, type, season, episode, subtitleUrl });
   };
 
   return (
@@ -62,6 +63,31 @@ const NetflixDashboard = ({ onSelect }) => {
               </div>
             </div>
           )}
+
+          <div className="form-group">
+            <label>Subtitles (.vtt/.srt) - Optional</label>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <input 
+                type="text" 
+                placeholder="Paste subtitle URL here" 
+                value={subtitleUrl} 
+                onChange={(e) => setSubtitleUrl(e.target.value)}
+                style={{ flex: 1 }}
+              />
+              <a 
+                href={`https://subdl.com/search?q=${tmdbId}`} 
+                target="_blank" 
+                rel="noreferrer" 
+                className="netflix-sub-search"
+                title="Search Arabic Subtitles"
+              >
+                🔍 Search
+              </a>
+            </div>
+            <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '4px' }}>
+              Supported: .srt, .vtt. Links from most sites will be proxied automatically.
+            </p>
+          </div>
 
           <button type="submit" className="netflix-btn">START WATCHING</button>
         </form>
@@ -130,6 +156,24 @@ const NetflixDashboard = ({ onSelect }) => {
         }
         .netflix-btn:hover {
           background: #b20710;
+        }
+        .netflix-sub-search {
+          background: rgba(229, 9, 20, 0.2);
+          color: #e50914;
+          padding: 8px 12px;
+          border-radius: 4px;
+          text-decoration: none;
+          font-size: 0.8rem;
+          font-weight: bold;
+          display: flex;
+          align-items: center;
+          white-space: nowrap;
+          transition: all 0.2s;
+          border: 1px solid rgba(229, 9, 20, 0.3);
+        }
+        .netflix-sub-search:hover {
+          background: #e50914;
+          color: white;
         }
         .netflix-hint {
           margin-top: 20px;

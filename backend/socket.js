@@ -206,7 +206,7 @@ function setupSocket(io) {
 
     // Handle Netflix (Vidking) events
     socket.on("netflix-event", async (data) => {
-      const { roomId, event, tmdbId, type, season, episode, currentTime, playing } = data;
+      const { roomId, event, tmdbId, type, season, episode, currentTime, playing, subtitleUrl } = data;
 
       try {
         const hostCheck = await isHost(roomId, socket.user.userId);
@@ -222,6 +222,7 @@ function setupSocket(io) {
           episode,
           currentTime,
           playing,
+          subtitleUrl,
           isNetflix: true
         });
 
