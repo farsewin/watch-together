@@ -204,6 +204,34 @@ function setupSocket(io) {
       }
     });
 
+    // Handle Netflix (Vidking) events
+    socket.on("netflix-event", async (data) => {
+      const { roomId, event, tmdbId, type, season, episode, currentTime, playing } = data;
+
+      try {
+        const hostCheck = await isHost(roomId, socket.user.userId);
+        if (!hostCheck) return;
+
+        console.log(`[Netflix] Event from HOST ${socket.id}: ${event} for ${type} ${tmdbId}`);
+
+        // Save state to Redis (including Netflix specific fields)
+        await saveVideoState(roomId, {
+          tmdbId,
+          type,
+          season,
+          episode,
+          currentTime,
+          playing,
+          isNetflix: true
+        });
+
+        // Broadcast to others
+        socket.to(roomId).emit("netflix-sync", data);
+      } catch (err) {
+        console.error("Error handling netflix-event:", err);
+      }
+    });
+
     // Handle URL request (guest requests URL from host)
     socket.on("request-url", (data) => {
       const { roomId } = data;

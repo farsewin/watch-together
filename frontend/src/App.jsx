@@ -10,6 +10,11 @@ import "./App.css";
 const DEFAULT_VIDEO = "https://www.w3schools.com/html/mov_bbb.mp4";
 
 function App() {
+  // If we are on /netflix route, render the Netflix Watch Party
+  if (window.location.pathname === "/netflix") {
+    return <NetflixWatchParty />;
+  }
+
   const [roomId, setRoomId] = useState("");
   const [joinedRoom, setJoinedRoom] = useState(null);
   const [isHost, setIsHost] = useState(false);
