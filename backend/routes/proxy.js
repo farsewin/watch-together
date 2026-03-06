@@ -57,14 +57,17 @@ router.get("/stream/:id", async (req, res) => {
     ];
 
     Object.keys(response.headers).forEach(header => {
-      if (!hopByHopHeaders.includes(header.toLowerCase())) {
+      const lowerHeader = header.toLowerCase();
+      // Skip hop-by-hop headers and ANY existing CORS headers from Pixeldrain
+      if (!hopByHopHeaders.includes(lowerHeader) && !lowerHeader.startsWith('access-control-')) {
         res.setHeader(header, response.headers[header]);
       }
     });
 
-    // Ensure fundamental streaming headers are prominent
+    // Ensure our own CORS and fundamental streaming headers are set
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     if (!res.getHeader('accept-ranges')) res.setHeader("Accept-Ranges", "bytes");
-    if (!res.getHeader('access-control-allow-origin')) res.setHeader("Access-Control-Allow-Origin", "*");
 
     // Pipe the stream to the response
     response.data.pipe(res);

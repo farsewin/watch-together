@@ -15,6 +15,7 @@ const VideoJSPlayer = (props) => {
       const videoElement = document.createElement("video");
       videoElement.classList.add('video-js', 'vjs-big-play-centered');
       videoElement.setAttribute("referrerpolicy", "no-referrer");
+      videoElement.setAttribute("crossorigin", "anonymous");
       videoElement.setAttribute("playsinline", "true");
       videoRef.current.appendChild(videoElement);
 
