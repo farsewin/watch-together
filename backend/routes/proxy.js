@@ -26,6 +26,14 @@ router.get("/stream/:id", async (req, res) => {
       validateStatus: () => true // Forward all statuses (200, 206, 403, etc.)
     };
 
+    // Add API Key for higher limits if available
+    const apiKey = process.env.PIXELDRAIN_API_KEY;
+    if (apiKey) {
+      // Pixeldrain uses Basic Auth with empty username: "Authorization: Basic [base64(:apiKey)]"
+      const auth = Buffer.from(`:${apiKey}`).toString('base64');
+      axiosConfig.headers['Authorization'] = `Basic ${auth}`;
+    }
+
     if (range) {
       axiosConfig.headers['Range'] = range;
     }
@@ -33,12 +41,19 @@ router.get("/stream/:id", async (req, res) => {
     const response = await axios(axiosConfig);
     const contentType = response.headers['content-type'] || '';
 
-    console.log(`[Proxy] <-- Pixeldrain Result: ${response.status} | Content-Type: ${contentType}`);
+    console.log(`[Proxy] <-- Pixeldrain Result: ${response.status} | Content-Type: ${contentType} | Auth: ${apiKey ? 'Yes' : 'No'}`);
+
+    // Check for specific Pixeldrain error messages
+    if (response.status !== 200 && response.status !== 206) {
+      let errorData = '';
+      // We can't easily read the stream here without breaking piping, 
+      // but if it's a small JSON error we can check it.
+    }
 
     // CORB Protection: If Pixeldrain returns HTML (likely an error page), 
     // we should log it clearly. HTML in a video source triggers CORB.
     if (contentType.includes('text/html')) {
-      console.error(`[Proxy] [WARNING] Pixeldrain returned HTML instead of video. This will cause CORB. Check if the IP is blocked or link is private.`);
+      console.error(`[Proxy] [WARNING] Pixeldrain returned HTML/Error instead of video. This will cause CORB. Check server logs for response status: ${response.status}`);
     }
 
     // Forward the status code
