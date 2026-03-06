@@ -136,16 +136,29 @@ function App() {
                 />
               </div>
               <div className="input-row">
-                <label>Subtitles (.vtt):</label>
-                <input
-                  type="text"
-                  value={subtitleUrl}
-                  onChange={(e) => isHost && setSubtitleUrl(e.target.value)}
-                  onBlur={broadcastUrl}
-                  onKeyDown={(e) => e.key === "Enter" && broadcastUrl()}
-                  placeholder={isHost ? "Enter .vtt URL (Optional)" : "Host controls subtitles"}
-                  disabled={!isHost}
-                />
+                <label>Subtitles (.vtt/.srt):</label>
+                <div className="input-with-helper">
+                  <input
+                    type="text"
+                    value={subtitleUrl}
+                    onChange={(e) => isHost && setSubtitleUrl(e.target.value)}
+                    onBlur={broadcastUrl}
+                    onKeyDown={(e) => e.key === "Enter" && broadcastUrl()}
+                    placeholder={isHost ? "Enter .srt or .vtt URL" : "Host controls subtitles"}
+                    disabled={!isHost}
+                  />
+                  {isHost && (
+                    <a 
+                      href={`https://subdl.com/search?q=${videoUrl.split('/').pop()}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="sub-helper-link"
+                      title="Search for Arabic Subtitles"
+                    >
+                      🔍 Search Arabic Subs
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
             <VideoPlayer

@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import VideoJSPlayer from "./VideoJSPlayer";
 import socket from "./socket";
-import { convertVideoUrl, hasDrifted, getVideoType } from "./videoUtils";
+import { convertVideoUrl, hasDrifted, getVideoType, convertSubtitleUrl } from "./videoUtils";
 
 function VideoPlayer({ roomId, videoUrl, subtitleUrl, isHost, initialState }) {
   const playerRef = useRef(null);
   const syncedUrl = useMemo(() => convertVideoUrl(videoUrl), [videoUrl]);
+  const syncedSubUrl = useMemo(() => convertSubtitleUrl(subtitleUrl), [subtitleUrl]);
 
   const handlePlayerReady = (player) => {
     playerRef.current = player;
@@ -98,6 +99,7 @@ function VideoPlayer({ roomId, videoUrl, subtitleUrl, isHost, initialState }) {
   const playerOptions = useMemo(() => {
     const type = getVideoType(syncedUrl);
     const isYouTube = type === "video/youtube";
+    const subLabel = subtitleUrl.toLowerCase().includes("ar") ? "Arabic Subtitles" : "Subtitles";
     
     return {
       autoplay: false,
@@ -114,15 +116,15 @@ function VideoPlayer({ roomId, videoUrl, subtitleUrl, isHost, initialState }) {
         iv_load_policy: 3,
         modestbranding: 1
       },
-      tracks: subtitleUrl ? [{
+      tracks: syncedSubUrl ? [{
         kind: 'subtitles',
-        src: subtitleUrl,
-        srclang: 'en',
-        label: 'Subtitles',
+        src: syncedSubUrl,
+        srclang: subtitleUrl.toLowerCase().includes("ar") ? 'ar' : 'en',
+        label: subLabel,
         default: true
       }] : []
     };
-  }, [syncedUrl, subtitleUrl]);
+  }, [syncedUrl, syncedSubUrl, subtitleUrl]);
 
 
   return (

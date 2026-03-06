@@ -33,6 +33,19 @@ export const convertVideoUrl = (url) => {
 };
 
 /**
+ * Utility to proxy and convert subtitles (e.g. SRT to VTT).
+ */
+export const convertSubtitleUrl = (url) => {
+  if (!url) return "";
+  
+  // If it's already a local/proxied URL, return it
+  if (url.includes("/subtitle-vtt")) return url;
+  
+  // Wrap in proxy to handle CORS and SRT->VTT
+  return `${getBackendUrl()}/subtitle-vtt?url=${encodeURIComponent(url)}`;
+};
+
+/**
  * Checks if local time has drifted too far from the target (host) time.
  */
 export const hasDrifted = (localTime, targetTime, threshold = 1.5) => {
