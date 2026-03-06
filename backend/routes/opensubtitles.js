@@ -54,22 +54,28 @@ router.post('/download', async (req, res) => {
   }
 
   try {
+    console.log(`[OpenSubtitles] Requesting download for file_id: ${file_id}`);
     const response = await axios.post(`${BASE_URL}/download`, 
-      { file_id, sub_format: 'vtt' },
+      { file_id }, // Removed sub_format: 'vtt' to get raw file for better compatibility
       {
         headers: {
           'Api-Key': API_KEY,
           'User-Agent': 'WatchTogether/1.0.0',
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
       }
     );
 
-    // The response contains a 'link' which is the direct URL
+    console.log(`[OpenSubtitles] Download link obtained:`, response.data.link);
     res.json(response.data);
   } catch (error) {
-    console.error(`[OpenSubtitles] Download error:`, error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to get download link' });
+    const errorData = error.response?.data || error.message;
+    console.error(`[OpenSubtitles] Download error detailed:`, errorData);
+    res.status(500).json({ 
+      error: 'Failed to get download link',
+      details: errorData 
+    });
   }
 });
 

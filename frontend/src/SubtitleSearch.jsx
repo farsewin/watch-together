@@ -55,7 +55,8 @@ const SubtitleSearch = ({ tmdbId, type, season, episode, onSelect }) => {
       setResults([]); // Close results
     } catch (err) {
       console.error('Download error:', err);
-      setError('Failed to get subtitle link');
+      const detailedError = err.response?.data?.details?.message || err.response?.data?.error || 'Failed to get subtitle link';
+      setError(detailedError);
     } finally {
       setLoading(false);
     }
