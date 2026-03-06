@@ -126,14 +126,16 @@ function VideoPlayer({ roomId, videoUrl, subtitleUrl, isHost, initialState }) {
 
 
   return (
-    <div className="video-player-container">
-      <VideoJSPlayer 
-        options={playerOptions}
-        onReady={handlePlayerReady}
-        onPlay={onPlay}
-        onPause={onPause}
-        onSeek={onSeek}
-      />
+    <div className="video-container">
+      <div className="player-wrapper">
+        <VideoJSPlayer 
+          options={playerOptions}
+          onReady={handlePlayerReady}
+          onPlay={onPlay}
+          onPause={onPause}
+          onSeek={onSeek}
+        />
+      </div>
     </div>
   );
 }

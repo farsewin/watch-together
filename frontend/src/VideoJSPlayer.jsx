@@ -95,8 +95,8 @@ const VideoJSPlayer = (props) => {
   }, [playerRef]);
 
   return (
-    <div data-vjs-player>
-      <div ref={videoRef} />
+    <div data-vjs-player style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div ref={videoRef} style={{ width: '100%', height: '100%' }} />
     </div>
   );
 }
