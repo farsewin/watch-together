@@ -5,6 +5,7 @@ import VideoPlayer from "./VideoPlayer";
 import Chat from "./Chat";
 import socket from "./socket";
 import "./App.css";
+import NetflixWatchParty from "./NetflixWatchParty";
 
 // Default sample video URL
 const DEFAULT_VIDEO = "https://www.w3schools.com/html/mov_bbb.mp4";
