@@ -452,33 +452,6 @@ button:disabled {
   cursor: pointer;
 }
 
-.input-with-helper {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex: 1;
-}
-
-.sub-helper-link {
-  background: rgba(229, 9, 20, 0.1);
-  color: #e50914;
-  padding: 8px 12px;
-  border-radius: 4px;
-  text-decoration: none;
-  font-size: 0.8rem;
-  font-weight: bold;
-  white-space: nowrap;
-  transition: all 0.2s;
-  border: 1px solid rgba(229, 9, 20, 0.2);
-}
-
-.sub-helper-link:hover {
-  background: #e50914;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3);
-}
-
 .play-btn {
   padding: 1.2rem 2.5rem;
   font-size: 1.5rem;

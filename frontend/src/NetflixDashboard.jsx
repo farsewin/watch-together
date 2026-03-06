@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import SubtitleSearch from "./SubtitleSearch";
 
 const NetflixDashboard = ({ onSelect }) => {
   const [tmdbId, setTmdbId] = useState("");
@@ -65,28 +66,19 @@ const NetflixDashboard = ({ onSelect }) => {
           )}
 
           <div className="form-group">
-            <label>Subtitles (.vtt/.srt) - Optional</label>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <input 
-                type="text" 
-                placeholder="Paste subtitle URL here" 
-                value={subtitleUrl} 
-                onChange={(e) => setSubtitleUrl(e.target.value)}
-                style={{ flex: 1 }}
-              />
-              <a 
-                href={`https://subdl.com/search?q=${tmdbId}`} 
-                target="_blank" 
-                rel="noreferrer" 
-                className="netflix-sub-search"
-                title="Search Arabic Subtitles"
-              >
-                🔍 Search
-              </a>
-            </div>
-            <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '4px' }}>
-              Supported: .srt, .vtt. Links from most sites will be proxied automatically.
-            </p>
+            <label>Subtitles (OpenSubtitles)</label>
+            <SubtitleSearch 
+              tmdbId={tmdbId}
+              type={type}
+              season={season}
+              episode={episode}
+              onSelect={(url) => setSubtitleUrl(url)}
+            />
+            {subtitleUrl && (
+              <p style={{ fontSize: '0.8rem', color: '#e50914', marginTop: '5px' }}>
+                ✅ Subtitle Selected
+              </p>
+            )}
           </div>
 
           <button type="submit" className="netflix-btn">START WATCHING</button>

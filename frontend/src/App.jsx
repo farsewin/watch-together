@@ -6,6 +6,7 @@ import Chat from "./Chat";
 import socket from "./socket";
 import "./App.css";
 import NetflixWatchParty from "./NetflixWatchParty";
+import SubtitleSearch from "./SubtitleSearch";
 
 // Default sample video URL
 const DEFAULT_VIDEO = "https://www.w3schools.com/html/mov_bbb.mp4";
@@ -136,29 +137,52 @@ function App() {
                 />
               </div>
               <div className="input-row">
-                <label>Subtitles (.vtt/.srt):</label>
-                <div className="input-with-helper">
-                  <input
-                    type="text"
-                    value={subtitleUrl}
-                    onChange={(e) => isHost && setSubtitleUrl(e.target.value)}
-                    onBlur={broadcastUrl}
-                    onKeyDown={(e) => e.key === "Enter" && broadcastUrl()}
-                    placeholder={isHost ? "Enter .srt or .vtt URL" : "Host controls subtitles"}
-                    disabled={!isHost}
+                <label>Subtitles (OpenSubtitles):</label>
+                {isHost ? (
+                  <SubtitleSearch 
+                    onSelect={(url) => {
+                      setSubtitleUrl(url);
+                      // Trigger broadcast immediately
+                      socket.emit("video-event", {
+                        roomId: joinedRoom,
+                        event: "url-change",
+                        videoUrl,
+                        subtitleUrl: url,
+                        senderId: socket.id
+                      });
+                    }} 
                   />
-                  {isHost && (
-                    <a 
-                      href={`https://subdl.com/search?q=${videoUrl.split('/').pop()}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="sub-helper-link"
-                      title="Search for Arabic Subtitles"
-                    >
-                      🔍 Search Arabic Subs
-                    </a>
-                  )}
-                </div>
+                ) : (
+                  <div className="input-with-helper">
+                    <input
+                      type="text"
+                      value={subtitleUrl ? "Subtitles Loaded" : "No subtitles"}
+                      disabled
+                      placeholder="Host controls subtitles"
+                    />
+                  </div>
+                )}
+                {subtitleUrl && isHost && (
+                   <div style={{ fontSize: '0.8rem', color: '#999', marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                     <span>✅ Subtitles Active</span>
+                     <button 
+                       onClick={() => {
+                         setSubtitleUrl("");
+                         socket.emit("video-event", {
+                           roomId: joinedRoom,
+                           event: "url-change",
+                           videoUrl,
+                           subtitleUrl: "",
+                           senderId: socket.id
+                         });
+                       }} 
+                       className="sub-helper-link"
+                       style={{ background: 'rgba(255,255,255,0.05)', color: '#e50914', border: '1px solid #e50914' }}
+                     >
+                       Remove
+                     </button>
+                   </div>
+                )}
               </div>
             </div>
             <VideoPlayer

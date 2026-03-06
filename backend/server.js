@@ -7,8 +7,9 @@ const cors = require("cors");
 const roomRoutes = require("./routes/room");
 const adminRoutes = require("./routes/admin");
 const authRoutes = require("./routes/auth");
-const proxyRoutes = require("./routes/proxy");
+const proxyRouter = require("./routes/proxy"); // Changed from proxyRoutes to proxyRouter
 const subtitleRouter = require("./routes/subtitle"); // New
+const opensubtitlesRouter = require('./routes/opensubtitles'); // New
 const setupSocket = require("./socket");
 const { connectRedis, redisPub, redisSub, reserveRoom } = require("./redis");
 
