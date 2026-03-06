@@ -168,7 +168,7 @@ const SubtitleSearch = ({ tmdbId, type, season, episode, onSelect }) => {
           font-weight: bold;
           color: #fff;
         }
-        .sub-title { flex: 1; font-size: 0.85rem; color: #ccc; white-space: nowrap; overflow: hidden; text_overflow: ellipsis; }
+        .sub-title { flex: 1; font-size: 0.85rem; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .dl-count { font-size: 0.75rem; color: #666; }
         .error-text { color: #ff0000; font-size: 0.8rem; margin: 5px 0; }
       `}</style>
