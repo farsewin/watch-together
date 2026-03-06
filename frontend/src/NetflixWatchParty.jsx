@@ -1,32 +1,23 @@
 import React, { useState, useEffect } from "react";
-import io from "socket.io-client";
+import socket from "./socket";
 import NetflixDashboard from "./NetflixDashboard";
 import NetflixPlayer from "./NetflixPlayer";
 import Room from "./Room";
 
-// Shared socket logic
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || (window.location.hostname === "localhost" ? "http://localhost:3001" : "");
-
 const NetflixWatchParty = () => {
   const [room, setRoom] = useState(null);
   const [roomId, setRoomId] = useState(""); // Needed for Room component internal state
-  const [socket, setSocket] = useState(null);
   const [content, setContent] = useState(null); // { tmdbId, type, season, episode }
   const [syncState, setSyncState] = useState({ currentTime: 0, playing: true });
   const [isHost, setIsHost] = useState(false);
 
-  // Initialize Socket
-  useEffect(() => {
-    const s = io(BACKEND_URL, { withCredentials: true });
-    setSocket(s);
-    return () => s.disconnect();
-  }, []);
-
   // Handle Room Join/State
   const handleJoinRoom = (id, hostStatus, videoState) => {
-    setRoom({ id }); 
+    console.log("[Netflix] Joined room:", id, "Host:", hostStatus);
+    setRoom({ id });
     setIsHost(hostStatus);
 
+    // Restore video state if it exists and is Netflix content
     if (videoState && videoState.isNetflix) {
       setContent({
         tmdbId: videoState.tmdbId,
@@ -51,7 +42,7 @@ const NetflixWatchParty = () => {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on("netflix-sync", (data) => {
+    const handleNetflixSync = (data) => {
       console.log("[Netflix] Received sync:", data);
       
       // Update content info
@@ -71,14 +62,15 @@ const NetflixWatchParty = () => {
         }
         return prev;
       });
-    });
+    };
 
-    return () => socket.off("netflix-sync");
-  }, [socket]);
+    socket.on("netflix-sync", handleNetflixSync);
+    return () => socket.off("netflix-sync", handleNetflixSync);
+  }, []);
 
   // Host: Broadcast changes
   const handlePlayerStateChange = (state) => {
-    if (!isHost || !socket || !room) return;
+    if (!isHost || !room) return;
 
     console.log("[Netflix] Host emitting event:", state.event);
     socket.emit("netflix-event", {
@@ -90,7 +82,7 @@ const NetflixWatchParty = () => {
 
   const handleContentSelect = (selectedContent) => {
     setContent(selectedContent);
-    if (isHost && socket && room) {
+    if (isHost && room) {
        socket.emit("netflix-event", {
          roomId: room.id,
          event: "load",
